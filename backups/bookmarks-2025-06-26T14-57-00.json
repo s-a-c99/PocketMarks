@@ -1,0 +1,88 @@
+[
+  {
+    "id": "8180560d-be7e-4487-ac5f-1fa9c8073bc9",
+    "type": "bookmark",
+    "title": "example",
+    "url": "https://example.com",
+    "createdAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "4a9ac3ad-3e4d-48c5-a610-1f3261f6a26d",
+    "type": "bookmark",
+    "title": "example1",
+    "url": "https://example1.com",
+    "createdAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "168360b7-0c80-4f3d-96c7-bae4c048a914",
+    "type": "bookmark",
+    "title": "a",
+    "url": "https://esempio2.com",
+    "createdAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "66e8826d-3cc5-4a3e-884e-918930f60ac6",
+    "type": "bookmark",
+    "title": "b",
+    "url": "https://esempio3.com",
+    "createdAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "8c116703-aafa-4812-8180-4bfbdefcccb5",
+    "type": "bookmark",
+    "title": "d",
+    "url": "https://esempio4.com",
+    "createdAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "cf66844a-8485-4fdf-a9ee-5bb8d27973a4",
+    "type": "bookmark",
+    "title": "g",
+    "url": "https://esempio5.com",
+    "createdAt": "2025-06-26T13:46:52.850Z"
+  },
+  {
+    "id": "0162ef21-78db-449c-9ffd-c7b9f3bf4a7b",
+    "type": "bookmark",
+    "title": "hasubapduvnspovunsjvanjkvn",
+    "url": "https://esempio6.com",
+    "createdAt": "2025-06-26T13:47:27.118Z"
+  },
+  {
+    "id": "180688bc-dffe-4168-9e8e-e9e79e02aa50",
+    "type": "folder",
+    "title": "prova1",
+    "createdAt": "2025-06-26T13:48:23.852Z",
+    "children": [
+      {
+        "id": "67a0eebe-9437-420a-855a-251a2a784c3b",
+        "type": "bookmark",
+        "title": "abc",
+        "url": "https://esempio8.com",
+        "createdAt": "2025-06-26T14:20:50.877Z"
+      },
+      {
+        "id": "5d392c7b-aca3-4d3d-9c17-951278ca4ffd",
+        "type": "folder",
+        "title": "sotto-cartella",
+        "createdAt": "2025-06-26T14:21:17.171Z",
+        "children": [
+          {
+            "id": "c9eaa4c3-0e74-4100-9dc5-445367823982",
+            "type": "bookmark",
+            "title": "fgt",
+            "url": "https://esempio9.com",
+            "createdAt": "2025-06-26T14:21:36.887Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "845c3c4d-c725-4d7a-a1ed-cb26da5bc6ea",
+    "type": "bookmark",
+    "title": "lolo",
+    "url": "https://www.osintcombine.com/tools",
+    "createdAt": "2025-06-26T14:44:41.999Z"
+  }
+]

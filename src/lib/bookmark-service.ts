@@ -1,3 +1,4 @@
+
 // This is a server-only module.
 import 'server-only';
 import fs from 'fs/promises';
@@ -29,6 +30,7 @@ async function readBookmarksFile(): Promise<BookmarkItem[]> {
 }
 
 async function writeBookmarksFile(bookmarks: BookmarkItem[]): Promise<void> {
+  noStore();
   const data = JSON.stringify(bookmarks, null, 2);
   await fs.writeFile(bookmarksFilePath, data, 'utf-8');
 }

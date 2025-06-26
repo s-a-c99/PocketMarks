@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useTransition, useRef } from "react";
@@ -190,61 +191,75 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         const parser = new DOMParser();
         const doc = parser.parseFromString(content, "text/html");
 
-        const parseDl = (dlElement: HTMLDListElement): BookmarkItem[] => {
+        // New robust recursive parser
+        const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
             const items: BookmarkItem[] = [];
-            const childElements = Array.from(dlElement.children);
-            
-            for (let i = 0; i < childElements.length; i++) {
-                const child = childElements[i];
+            if (!root || !root.children) {
+                return items;
+            }
+            const children = Array.from(root.children);
 
-                if (child.tagName !== 'DT') {
+            for (let i = 0; i < children.length; i++) {
+                const node = children[i];
+                // We only care about <DT> elements
+                if (node.tagName !== 'DT') {
                     continue;
                 }
 
-                const header = child.querySelector(':scope > h3, :scope > H3');
-                const anchor = child.querySelector(':scope > a, :scope > A');
-                
-                if (header) {
-                    let nextDl: HTMLDListElement | null = null;
-                    for (let j = i + 1; j < childElements.length; j++) {
-                        const nextChild = childElements[j];
-                        if (nextChild.tagName === 'DT') {
-                            break; 
-                        }
-                        if (nextChild.tagName === 'DL') {
-                            nextDl = nextChild as HTMLDListElement;
-                            i = j;
-                            break;
-                        }
-                    }
-                    
-                    items.push({
+                const a = node.querySelector('A');
+                const h3 = node.querySelector('H3');
+                const add_date = a?.getAttribute('add_date') || h3?.getAttribute('add_date') || '0';
+                const createdAt = new Date(parseInt(add_date) * 1000 || Date.now()).toISOString();
+
+                if (h3) { // It's a folder
+                    const folder: Folder = {
                         id: uuidv4(),
                         type: 'folder',
-                        title: header.textContent || 'Untitled Folder',
-                        children: nextDl ? parseDl(nextDl) : [],
-                        createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000 || Date.now()).toISOString()
-                    });
-                } else if (anchor) {
+                        title: h3.textContent || 'Untitled Folder',
+                        children: [],
+                        createdAt: createdAt,
+                    };
+
+                    // The folder's content is in the next sibling <DL> element.
+                    const nextElement = children[i + 1];
+                    if (nextElement && nextElement.tagName === 'DL') {
+                        folder.children = parseBookmarksRecursive(nextElement);
+                        i++; // Increment i to skip this DL in the next iteration
+                    }
+                    items.push(folder);
+
+                } else if (a) { // It's a bookmark
                     items.push({
                         id: uuidv4(),
                         type: 'bookmark',
-                        title: anchor.textContent || 'Untitled Bookmark',
-                        url: anchor.getAttribute('href') || '',
-                        createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000 || Date.now()).toISOString()
+                        title: a.textContent || 'Untitled Bookmark',
+                        url: a.getAttribute('href') || '',
+                        createdAt: createdAt,
                     });
                 }
             }
             return items;
-        };
+        }
         
-        const rootDLs = doc.body.querySelectorAll(':scope > dl, :scope > DL');
-        const importedItems = Array.from(rootDLs).flatMap(dl => parseDl(dl as HTMLDListElement));
+        const rootDL = doc.querySelector('body > dl, body > DL');
+        if (!rootDL) {
+             toast({ variant: "destructive", title: "Import Failed", description: "Could not find a valid bookmark list in the file." });
+             if(event.target) event.target.value = '';
+             return;
+        }
+
+        const importedItems = parseBookmarksRecursive(rootDL);
+
+        if (importedItems.length === 0) {
+            toast({ variant: "destructive", title: "Import Failed", description: "No bookmarks or folders were found in the file." });
+            if(event.target) event.target.value = '';
+            return;
+        }
 
         if (mode === 'replace') {
             setPendingImportData(importedItems);
             setIsPasswordDialogOpen(true);
-        } else {
+        } else { // mode === 'merge'
             startTransition(async () => {
                 const itemsForComparison = await compareBookmarksAction(importedItems);
                 if (itemsForComparison.length > 0) {
@@ -256,8 +271,13 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             });
         }
     };
+    
+    reader.onerror = () => {
+        toast({ variant: "destructive", title: "Import Failed", description: "Could not read the selected file." });
+    }
+
     reader.readAsText(file);
-    event.target.value = '';
+    if(event.target) event.target.value = '';
   };
 
 
