@@ -1,7 +1,10 @@
 "use server";
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { saveBookmark, deleteBookmark } from './bookmark-service';
+import type { Bookmark } from '@/types';
 
 const SESSION_COOKIE_NAME = 'pocketmarks_session';
 
@@ -30,4 +33,15 @@ export async function login(prevState: { error: string } | undefined, formData: 
 export async function logout() {
   cookies().delete(SESSION_COOKIE_NAME);
   redirect('/login');
+}
+
+// Bookmark actions
+export async function saveBookmarkAction(bookmark: Bookmark) {
+  await saveBookmark(bookmark);
+  revalidatePath('/bookmarks');
+}
+
+export async function deleteBookmarkAction(id: string) {
+  await deleteBookmark(id);
+  revalidatePath('/bookmarks');
 }

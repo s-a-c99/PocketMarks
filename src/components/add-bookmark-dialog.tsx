@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +33,7 @@ const formSchema = z.object({
 type AddBookmarkDialogProps = {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  onBookmarkSaved: (bookmark: Bookmark) => void;
+  onBookmarkSaved: (values: Omit<Bookmark, 'id'>) => void;
   bookmarkToEdit?: Bookmark | null;
 };
 
@@ -60,11 +59,7 @@ export function AddBookmarkDialog({ isOpen, setIsOpen, onBookmarkSaved, bookmark
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const newBookmark: Bookmark = {
-      id: bookmarkToEdit?.id || uuidv4(),
-      ...values,
-    };
-    onBookmarkSaved(newBookmark);
+    onBookmarkSaved(values);
     setIsOpen(false);
   }
 

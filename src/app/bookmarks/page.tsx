@@ -3,9 +3,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { AppFooter } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
+import { getBookmarks } from "@/lib/bookmark-service";
 import { LogOut } from "lucide-react";
 
-export default function BookmarksPage() {
+export default async function BookmarksPage() {
+  const bookmarks = await getBookmarks();
+
   return (
     <main className="min-h-screen w-full bg-background text-foreground">
       <header className="py-8 bg-card/50 border-b">
@@ -27,7 +30,7 @@ export default function BookmarksPage() {
         </div>
       </header>
       <div className="container mx-auto py-8">
-        <BookmarkList />
+        <BookmarkList initialBookmarks={bookmarks} />
       </div>
       <AppFooter />
     </main>

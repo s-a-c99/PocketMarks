@@ -1,21 +1,22 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { Plus } from "lucide-react";
-import { mockBookmarks } from "@/data/mock-data";
+import { v4 as uuidv4 } from 'uuid';
 import type { Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
 import { AddBookmarkDialog } from "./add-bookmark-dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { deleteBookmarkAction, saveBookmarkAction } from "@/lib/actions";
 
-export function BookmarkList() {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>(mockBookmarks.sort((a, b) => a.title.localeCompare(b.title)));
+export function BookmarkList({ initialBookmarks }: { initialBookmarks: Bookmark[] }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [bookmarkToEdit, setBookmarkToEdit] = useState<Bookmark | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const handleAddNew = () => {
     setBookmarkToEdit(null);
@@ -28,36 +29,39 @@ export function BookmarkList() {
   };
 
   const handleDelete = (id: string) => {
-    setBookmarks(bookmarks.filter((b) => b.id !== id));
-    toast({ title: "Bookmark deleted", description: "The bookmark has been removed from your list." });
+    startTransition(() => {
+      deleteBookmarkAction(id).then(() => {
+        toast({ title: "Bookmark deleted", description: "The bookmark has been removed." });
+      });
+    });
   };
 
-  const handleSaveBookmark = (bookmark: Bookmark) => {
-    const isEditing = bookmarks.some(b => b.id === bookmark.id);
-    let newBookmarks;
-    if (isEditing) {
-      newBookmarks = bookmarks.map((b) => (b.id === bookmark.id ? bookmark : b));
-    } else {
-      newBookmarks = [bookmark, ...bookmarks];
-    }
+  const handleSaveBookmark = (values: Omit<Bookmark, 'id'>) => {
+    const isEditing = !!bookmarkToEdit;
     
-    newBookmarks.sort((a, b) => a.title.localeCompare(b.title));
-    setBookmarks(newBookmarks);
-    
-    toast({
-        title: `Bookmark ${isEditing ? 'updated' : 'added'}`,
-        description: `"${bookmark.title}" has been saved.`
+    const bookmarkToSave: Bookmark = {
+        id: bookmarkToEdit?.id || uuidv4(),
+        ...values,
+    };
+
+    startTransition(() => {
+        saveBookmarkAction(bookmarkToSave).then(() => {
+             toast({
+                title: `Bookmark ${isEditing ? 'updated' : 'added'}`,
+                description: `"${bookmarkToSave.title}" has been saved.`
+            });
+        });
     });
   };
 
   const filteredBookmarks = useMemo(() => {
-    if (!searchTerm) return bookmarks;
-    return bookmarks.filter(
+    if (!searchTerm) return initialBookmarks;
+    return initialBookmarks.filter(
       (b) =>
         b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.url.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [bookmarks, searchTerm]);
+  }, [initialBookmarks, searchTerm]);
 
   return (
     <div className="w-full">
@@ -68,16 +72,17 @@ export function BookmarkList() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
+            disabled={isPending}
           />
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
         <div className="flex gap-4">
-            <Button onClick={handleAddNew} className="font-headline w-full md:w-auto">
+            <Button onClick={handleAddNew} className="font-headline w-full md:w-auto" disabled={isPending}>
                 <Plus className="mr-2 h-4 w-4" /> Add Bookmark
             </Button>
             {/* Placeholder for Import/Export */}
-            <Button variant="outline" className="font-headline hidden md:inline-flex">Import</Button>
-            <Button variant="outline" className="font-headline hidden md:inline-flex">Export</Button>
+            <Button variant="outline" className="font-headline hidden md:inline-flex" disabled={isPending}>Import</Button>
+            <Button variant="outline" className="font-headline hidden md:inline-flex" disabled={isPending}>Export</Button>
         </div>
       </div>
       
