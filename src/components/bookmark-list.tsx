@@ -1,19 +1,27 @@
 "use client";
 
-import { useState, useMemo, useTransition, Fragment, useRef } from "react";
-import { Plus, Folder as FolderIcon, FolderPlus, Pencil, Trash2, ChevronDown, Link2Off, Loader2 } from "lucide-react";
+import { useState, useMemo, useTransition, useRef } from "react";
+import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
-import type { Bookmark, BookmarkItem, Folder } from "@/types";
+import type { BookmarkItem, Folder } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
+import { FolderCard } from "./folder-card";
 import { ItemDialog } from "./item-dialog";
 import { PasswordConfirmationDialog } from "./password-confirmation-dialog";
+import { SyncComparisonDialog } from "./sync-comparison-dialog";
+import { BreadcrumbNav } from "./breadcrumb-nav";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Checkbox } from "./ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { deleteItemAction, saveItemAction, importBookmarksAction, exportBookmarksAction, exportSelectedBookmarksAction, checkDeadLinksAction } from "@/lib/actions";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Card } from "./ui/card";
+import {
+  deleteItemAction,
+  saveItemAction,
+  importBookmarksAction,
+  exportBookmarksAction,
+  exportSelectedBookmarksAction,
+  checkDeadLinksAction,
+  compareBookmarksAction
+} from "@/lib/actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,31 +32,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { findItem, findPath } from "@/lib/bookmark-service";
 
 
 function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
     if (!term) return items;
-
     const lowerCaseTerm = term.toLowerCase();
 
     return items.reduce((acc, item) => {
         if (item.title.toLowerCase().includes(lowerCaseTerm)) {
             if (item.type === 'folder') {
-                const allChildren = filterItems(item.children, ""); // return all children if folder name matches
-                acc.push({ ...item, children: allChildren });
+                acc.push({ ...item, children: filterItems(item.children, term) });
             } else {
                 acc.push(item);
             }
@@ -60,12 +56,9 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
             if (matchingChildren.length > 0) {
                 acc.push({ ...item, children: matchingChildren });
             }
-        } else if (item.type === 'bookmark') {
-            if (item.url.toLowerCase().includes(lowerCaseTerm)) {
-              acc.push(item);
-            }
+        } else if (item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm)) {
+            acc.push(item);
         }
-
         return acc;
     }, [] as BookmarkItem[]);
 }
@@ -74,48 +67,38 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
 export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<BookmarkItem | null>(null);
-  const [dialogParentId, setDialogParentId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<BookmarkItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const importModeRef = useRef<'merge' | 'replace'>('merge');
 
-  // State for password confirmation
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [pendingImportData, setPendingImportData] = useState<BookmarkItem[] | null>(null);
 
-  // State for dead link checker
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [linkStatuses, setLinkStatuses] = useState<Record<string, string>>({});
 
-  // State for sorting
   const [sortOrder, setSortOrder] = useState("date-desc");
+  
+  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
+  const [itemsToCompare, setItemsToCompare] = useState<BookmarkItem[]>([]);
 
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
-    setDialogParentId(null);
     setIsDialogOpen(true);
   };
 
   const handleAddNewFolder = () => {
     const folderScaffold = { id: '', type: 'folder' as const, title: '', createdAt: new Date().toISOString() };
     setItemToEdit(folderScaffold);
-    setDialogParentId(null);
     setIsDialogOpen(true);
   };
   
-  const handleAddItemToFolder = (parentId: string) => {
-    setItemToEdit(null);
-    setDialogParentId(parentId);
-    setIsDialogOpen(true);
-  };
-  
-  const handleEdit = (item: BookmarkItem, parentId: string | null = null) => {
+  const handleEdit = (item: BookmarkItem) => {
     setItemToEdit(item);
-    setDialogParentId(parentId);
     setIsDialogOpen(true);
   };
 
@@ -133,21 +116,21 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     });
   };
 
-  const handleSaveItem = (values: Omit<BookmarkItem, 'id' | 'children' | 'createdAt'>, parentId: string | null) => {
+  const handleSaveItem = (values: Omit<BookmarkItem, 'id' | 'children' | 'createdAt'>) => {
     const isEditing = !!itemToEdit && !!itemToEdit.id;
     
-    const itemToSave = {
+    const itemToSave: BookmarkItem = {
         id: isEditing ? itemToEdit.id : uuidv4(),
         ...values,
-        createdAt: isEditing ? itemToEdit.createdAt : new Date().toISOString(),
-    };
+        createdAt: isEditing ? (itemToEdit.createdAt || new Date().toISOString()) : new Date().toISOString(),
+    } as BookmarkItem;
 
     if (itemToSave.type === 'folder' && !isEditing) {
         (itemToSave as Folder).children = [];
     }
 
     startTransition(() => {
-        saveItemAction(itemToSave as BookmarkItem, parentId).then(() => {
+        saveItemAction(itemToSave, currentFolderId).then(() => {
              toast({
                 title: `${itemToSave.type.charAt(0).toUpperCase() + itemToSave.type.slice(1)} ${isEditing ? 'updated' : 'added'}`,
                 description: `"${itemToSave.title}" has been saved.`
@@ -157,16 +140,17 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
 
   const handleImportClick = (mode: 'merge' | 'replace') => {
-    importModeRef.current = mode;
+    fileInputRef.current?.setAttribute('data-import-mode', mode);
     fileInputRef.current?.click();
   }
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    const mode = fileInputRef.current?.getAttribute('data-import-mode') as 'merge' | 'replace';
+    if (!file || !mode) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const content = e.target?.result as string;
       if (!content) return;
       
@@ -207,24 +191,35 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       
       const importedItems = parseNodes(doc.body.childNodes);
       
-      if (importModeRef.current === 'replace') {
+      if (mode === 'replace') {
         setPendingImportData(importedItems);
         setIsPasswordDialogOpen(true);
       } else {
-        startTransition(() => {
-            importBookmarksAction(importedItems, 'merge').then(() => {
-                toast({ title: "Import Successful", description: "Your bookmarks have been merged." });
-            })
+        startTransition(async () => {
+          const itemsForComparison = await compareBookmarksAction(importedItems);
+          if (itemsForComparison.length > 0) {
+            setItemsToCompare(itemsForComparison);
+            setIsSyncDialogOpen(true);
+          } else {
+            toast({ title: "Nothing to import", description: "Your bookmarks are already up to date." });
+          }
         });
       }
     };
     reader.readAsText(file);
     event.target.value = ''; // Reset input
   };
+
+  const handleSyncConfirm = (itemsToImport: BookmarkItem[]) => {
+      startTransition(() => {
+          importBookmarksAction(itemsToImport, 'merge').then(() => {
+              toast({ title: "Import Successful", description: "Your new bookmarks have been merged." });
+          })
+      });
+  };
   
   const handlePasswordConfirm = (password: string) => {
     if (!pendingImportData) return;
-
     startTransition(() => {
         importBookmarksAction(pendingImportData, 'replace', password).then((result) => {
             if (result?.error) {
@@ -264,12 +259,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const handleExport = () => {
     startTransition(async () => {
         const htmlContent = await exportBookmarksAction();
-        if (htmlContent) {
-            downloadHtmlFile(htmlContent, 'pocketmarks_export.html');
-            toast({title: "Export Successful", description: "Your bookmarks have been downloaded."});
-        } else {
-            toast({variant: "destructive", title: "Export Failed", description: "Could not generate export file."});
-        }
+        downloadHtmlFile(htmlContent, 'pocketmarks_export.html');
+        toast({title: "Export Successful", description: "Your bookmarks have been downloaded."});
     });
   };
 
@@ -284,150 +275,77 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         }
     });
   };
-
+  
   const getDescendantIds = (item: BookmarkItem): string[] => {
-    if (item.type === 'bookmark') {
-        return [item.id];
+    const ids = [item.id];
+    if (item.type === 'folder') {
+        item.children.forEach(child => ids.push(...getDescendantIds(child)));
     }
-    return [item.id, ...item.children.flatMap(getDescendantIds)];
+    return ids;
   };
-
+  
   const handleSelectionChange = (itemId: string, checked: boolean) => {
+    const item = findItem(initialItems, itemId);
+    if (!item) return;
+
+    const idsToChange = getDescendantIds(item);
+    
     setSelectedIds(prev => {
         const newSet = new Set(prev);
         if (checked) {
-            newSet.add(itemId);
+            idsToChange.forEach(id => newSet.add(id));
         } else {
-            newSet.delete(itemId);
+            idsToChange.forEach(id => newSet.delete(id));
         }
         return newSet;
     });
+  };
+  
+  const handleNavigate = (folderId: string | null) => {
+    if (folderId === currentFolderId) return;
+    if (folderId === null) {
+      setCurrentFolderId(null);
+    } else {
+      const item = findItem(initialItems, folderId);
+      if (item && item.type === 'folder') {
+        setCurrentFolderId(folderId);
+      }
+    }
   };
 
-  const handleFolderSelectionChange = (folder: Folder, checked: boolean) => {
-    setSelectedIds(prev => {
-        const newSet = new Set(prev);
-        const allIds = getDescendantIds(folder);
-        if (checked) {
-            allIds.forEach(id => newSet.add(id));
-        } else {
-            allIds.forEach(id => newSet.delete(id));
-        }
-        return newSet;
-    });
-  };
+  const currentItems = useMemo(() => {
+    if (!currentFolderId) return initialItems;
+    const folder = findItem(initialItems, currentFolderId);
+    return folder && folder.type === 'folder' ? folder.children : [];
+  }, [currentFolderId, initialItems]);
+  
+  const breadcrumbs = useMemo(() => {
+    if (!currentFolderId) return [];
+    return findPath(initialItems, currentFolderId) || [];
+  }, [currentFolderId, initialItems]);
 
   const sortedItems = useMemo(() => {
-    const itemsToSort = JSON.parse(JSON.stringify(initialItems)); // Deep copy to avoid mutating original
-
+    const itemsToSort = JSON.parse(JSON.stringify(currentItems));
     const sortFn = (a: BookmarkItem, b: BookmarkItem) => {
+      if (a.type === 'folder' && b.type === 'bookmark') return -1;
+      if (a.type === 'bookmark' && b.type === 'folder') return 1;
+
       switch (sortOrder) {
-        case 'date-asc':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case 'date-desc':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'alpha-asc':
-          return a.title.localeCompare(b.title);
-        case 'alpha-desc':
-          return b.title.localeCompare(a.title);
-        default:
-          return 0;
+        case 'date-asc': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'date-desc': return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'alpha-asc': return a.title.localeCompare(b.title);
+        case 'alpha-desc': return b.title.localeCompare(a.title);
+        default: return 0;
       }
     };
-    
-    const recursiveSort = (items: BookmarkItem[]) => {
-      items.sort(sortFn);
-      items.forEach(item => {
-        if (item.type === 'folder') {
-          recursiveSort(item.children);
-        }
-      });
-      return items;
-    }
-
-    return recursiveSort(itemsToSort);
-  }, [initialItems, sortOrder]);
+    return itemsToSort.sort(sortFn);
+  }, [currentItems, sortOrder]);
 
   const filteredItems = useMemo(() => filterItems(sortedItems, searchTerm), [sortedItems, searchTerm]);
 
-  const renderItems = (items: BookmarkItem[], parentId: string | null = null) => {
-    const folders = items.filter(item => item.type === 'folder') as Folder[];
-    const bookmarks = items.filter(item => item.type === 'bookmark') as Bookmark[];
-
-    return (
-      <TooltipProvider>
-        <div className="space-y-4">
-          <Accordion type="multiple" className="w-full space-y-4" defaultValue={folders.map(f => f.id)}>
-            {folders.map(folder => (
-              <AccordionItem key={folder.id} value={folder.id} className="border-none">
-                <Card>
-                  <AccordionTrigger className="p-4 font-headline text-lg hover:no-underline">
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3">
-                         <Checkbox
-                            id={`select-folder-${folder.id}`}
-                            checked={getDescendantIds(folder).every(id => selectedIds.has(id))}
-                            onCheckedChange={(checked) => handleFolderSelectionChange(folder, !!checked)}
-                            onClick={(e) => e.preventDefault()}
-                         />
-                        <FolderIcon className="h-5 w-5 text-primary" />
-                        {folder.title}
-                      </div>
-                      <div className="flex items-center gap-1 pr-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); handleAddItemToFolder(folder.id)}}>
-                                      <FolderPlus className="h-4 w-4" />
-                                  </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Add item to folder</p></TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                              <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); handleEdit(folder)}}>
-                                      <Pencil className="h-4 w-4" />
-                                  </Button>
-                              </TooltipTrigger>
-                            <TooltipContent><p>Edit folder name</p></TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                              <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/80 hover:text-destructive" onClick={(e) => { e.preventDefault(); handleDelete(folder)}}>
-                                      <Trash2 className="h-4 w-4" />
-                                  </Button>
-                              </TooltipTrigger>
-                            <TooltipContent><p>Delete folder</p></TooltipContent>
-                          </Tooltip>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="p-4 pt-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                        {folder.children.map(item => (
-                            <Fragment key={item.id}>
-                                {item.type === 'bookmark' && <BookmarkCard bookmark={item} status={linkStatuses[item.id]} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} isSelected={selectedIds.has(item.id)} onSelectionChange={handleSelectionChange} />}
-                            </Fragment>
-                        ))}
-                    </div>
-                  </AccordionContent>
-                </Card>
-              </AccordionItem>
-            ))}
-          </Accordion>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {bookmarks.map((bookmark) => (
-                  <BookmarkCard key={bookmark.id} bookmark={bookmark} status={linkStatuses[bookmark.id]} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} isSelected={selectedIds.has(bookmark.id)} onSelectionChange={handleSelectionChange} />
-              ))}
-          </div>
-        </div>
-      </TooltipProvider>
-    )
-  }
-
   return (
     <div className="w-full">
-      <div className="flex flex-col md:flex-row gap-4 mb-8 flex-wrap">
+      <div className="flex flex-col md:flex-row gap-4 mb-4 flex-wrap">
         <div className="flex-grow flex flex-col sm:flex-row gap-4">
             <div className="relative flex-grow">
               <Input
@@ -489,13 +407,40 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         </div>
       </div>
       
+      <BreadcrumbNav path={breadcrumbs} onNavigate={handleNavigate} />
+      
       {filteredItems.length > 0 ? (
-        renderItems(filteredItems)
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-4">
+          {filteredItems.map(item => (
+            item.type === 'folder' ? (
+              <FolderCard 
+                key={item.id} 
+                folder={item} 
+                onEdit={handleEdit} 
+                onDelete={() => handleDelete(item)} 
+                onAddInFolder={handleAddNewBookmark}
+                onNavigate={() => handleNavigate(item.id)}
+                isSelected={selectedIds.has(item.id)}
+                onSelectionChange={handleSelectionChange}
+              />
+            ) : (
+              <BookmarkCard 
+                key={item.id} 
+                bookmark={item}
+                status={linkStatuses[item.id]} 
+                onEdit={handleEdit} 
+                onDelete={() => handleDelete(item)} 
+                isSelected={selectedIds.has(item.id)} 
+                onSelectionChange={handleSelectionChange}
+              />
+            )
+          ))}
+        </div>
       ) : (
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+        <div className="text-center py-16 border-2 border-dashed rounded-lg mt-4">
             <h3 className="text-xl font-semibold text-muted-foreground font-headline">No Items Found</h3>
             <p className="mt-2 text-muted-foreground">
-                {searchTerm ? "Try a different search term or " : "You haven't added any bookmarks or folders yet. "}
+                {searchTerm ? "Try a different search term or " : "This folder is empty. "}
                 <button onClick={handleAddNewBookmark} className="text-primary hover:underline font-semibold">add a bookmark now</button>.
             </p>
         </div>
@@ -506,7 +451,13 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         setIsOpen={setIsDialogOpen}
         onItemSaved={handleSaveItem}
         itemToEdit={itemToEdit}
-        parentId={dialogParentId}
+      />
+      
+      <SyncComparisonDialog
+        isOpen={isSyncDialogOpen}
+        setIsOpen={setIsSyncDialogOpen}
+        itemsToCompare={itemsToCompare}
+        onConfirm={handleSyncConfirm}
       />
 
       <PasswordConfirmationDialog

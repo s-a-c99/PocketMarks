@@ -29,12 +29,11 @@ const formSchema = z.object({
 type ItemDialogProps = {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  onItemSaved: (values: Omit<BookmarkItem, 'id' | 'children'>, parentId: string | null) => void;
+  onItemSaved: (values: Omit<BookmarkItem, 'id' | 'children' | 'createdAt'>) => void;
   itemToEdit?: BookmarkItem | null;
-  parentId?: string | null;
 };
 
-export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit, parentId = null }: ItemDialogProps) {
+export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemDialogProps) {
   const [itemType, setItemType] = useState<'bookmark' | 'folder'>('bookmark');
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -60,9 +59,9 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit, parentI
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (values.type === 'bookmark') {
-        onItemSaved({ type: 'bookmark', title: values.title, url: values.url! }, parentId);
+        onItemSaved({ type: 'bookmark', title: values.title, url: values.url! });
     } else {
-        onItemSaved({ type: 'folder', title: values.title }, parentId);
+        onItemSaved({ type: 'folder', title: values.title });
     }
     setIsOpen(false);
   }

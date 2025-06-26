@@ -33,13 +33,10 @@ async function writeBookmarksFile(bookmarks: BookmarkItem[]): Promise<void> {
 
 export async function getBookmarks(): Promise<BookmarkItem[]> {
   const bookmarks = await readBookmarksFile();
-  // Migration step for items without createdAt
   let needsWrite = false;
   const addTimestamp = (items: BookmarkItem[]) => {
     items.forEach(item => {
       if (!item.createdAt) {
-        // For old items, we use a default early date or a date from their ID if possible.
-        // For simplicity, we'll use a default old date.
         item.createdAt = new Date(0).toISOString();
         needsWrite = true;
       }
@@ -74,17 +71,18 @@ export async function saveItem(itemToSave: BookmarkItem, parentId: string | null
   const bookmarks = await readBookmarksFile();
 
   let itemWasUpdated = false;
+  // Try to find and update existing item
   findAndMutate(bookmarks, (item) => item.id === itemToSave.id, (items, index) => {
     const currentItem = items[index];
     if (currentItem.type === 'folder' && itemToSave.type === 'folder') {
       (itemToSave as Folder).children = currentItem.children;
     }
-    // `createdAt` is guaranteed by the migration in `getBookmarks`
-    itemToSave.createdAt = currentItem.createdAt; 
+    itemToSave.createdAt = currentItem.createdAt || new Date().toISOString();
     items[index] = itemToSave;
     itemWasUpdated = true;
   });
 
+  // If not updated, it's a new item
   if (!itemWasUpdated) {
     itemToSave.createdAt = new Date().toISOString();
     if (parentId) {
@@ -122,23 +120,24 @@ export async function overwriteBookmarks(items: BookmarkItem[]): Promise<void> {
     await writeBookmarksFile(items);
 }
 
-function getAllUrls(items: BookmarkItem[], urlSet: Set<string> = new Set()): Set<string> {
+function getAllUrls(items: BookmarkItem[], urlMap: Map<string, boolean> = new Map()): Map<string, boolean> {
     for (const item of items) {
         if (item.type === 'bookmark') {
-            urlSet.add(item.url);
+            urlMap.set(item.url, true);
         } else if (item.type === 'folder') {
-            getAllUrls(item.children, urlSet);
+            getAllUrls(item.children, urlMap);
         }
     }
-    return urlSet;
+    return urlMap;
 }
 
-function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[], existingUrls: Set<string>) {
+function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[]) {
+    const existingUrls = getAllUrls(existingItems);
     newItems.forEach(newItem => {
         if (newItem.type === 'bookmark') {
             if (!existingUrls.has(newItem.url)) {
                 existingItems.push(newItem);
-                existingUrls.add(newItem.url);
+                existingUrls.set(newItem.url, true);
             }
         } else if (newItem.type === 'folder') {
             const existingFolder = existingItems.find(
@@ -146,7 +145,7 @@ function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[], exi
             );
 
             if (existingFolder) {
-                mergeItems(existingFolder.children, newItem.children, existingUrls);
+                mergeItems(existingFolder.children, newItem.children);
             } else {
                 existingItems.push(newItem);
                 getAllUrls(newItem.children, existingUrls);
@@ -157,11 +156,32 @@ function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[], exi
 
 export async function mergeBookmarks(items: BookmarkItem[]): Promise<void> {
     const existingBookmarks = await readBookmarksFile();
+    mergeItems(existingBookmarks, items);
+    await writeBookmarksFile(existingBookmarks);
+}
+
+export async function compareBookmarks(newItems: BookmarkItem[]): Promise<BookmarkItem[]> {
+    const existingBookmarks = await readBookmarksFile();
     const existingUrls = getAllUrls(existingBookmarks);
 
-    mergeItems(existingBookmarks, items, existingUrls);
+    function filterNew(items: BookmarkItem[]): BookmarkItem[] {
+        const result: BookmarkItem[] = [];
+        for (const item of items) {
+            if (item.type === 'bookmark') {
+                if (!existingUrls.has(item.url)) {
+                    result.push(item);
+                }
+            } else if (item.type === 'folder') {
+                const newChildren = filterNew(item.children);
+                if (newChildren.length > 0) {
+                    result.push({ ...item, children: newChildren });
+                }
+            }
+        }
+        return result;
+    }
 
-    await writeBookmarksFile(existingBookmarks);
+    return filterNew(newItems);
 }
 
 
@@ -170,7 +190,7 @@ function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
     let html = `${indent}<DL><p>\n`;
 
     items.forEach(item => {
-        const addDate = Math.floor(new Date(item.createdAt).getTime() / 1000);
+        const addDate = Math.floor(new Date(item.createdAt || 0).getTime() / 1000);
         if (item.type === 'folder') {
             html += `${indent}    <DT><H3 ADD_DATE="${addDate}">${item.title}</H3>\n`;
             html += bookmarksToHtml(item.children, indentLevel + 1);
@@ -198,13 +218,16 @@ export async function exportBookmarks(): Promise<string> {
 
 function filterForExport(items: BookmarkItem[], selectedIds: Set<string>): BookmarkItem[] {
     return items.reduce((acc, item) => {
-        if (item.type === 'bookmark') {
-            if (selectedIds.has(item.id)) {
+        if (selectedIds.has(item.id)) {
+            if (item.type === 'folder') {
+                 acc.push({ ...item, children: filterForExport(item.children, selectedIds) });
+            } else {
                 acc.push(item);
             }
         } else if (item.type === 'folder') {
             const filteredChildren = filterForExport(item.children, selectedIds);
-            if (selectedIds.has(item.id) || filteredChildren.length > 0) {
+            if (filteredChildren.length > 0) {
+                // Include parent folder if at least one child is selected
                 acc.push({ ...item, children: filteredChildren });
             }
         }
@@ -213,16 +236,13 @@ function filterForExport(items: BookmarkItem[], selectedIds: Set<string>): Bookm
 }
 
 export async function exportSelectedBookmarks(ids: string[]): Promise<string> {
-    if (ids.length === 0) {
-        return "";
-    }
+    if (ids.length === 0) return "";
     const bookmarks = await getBookmarks();
     const selectedIds = new Set(ids);
     const itemsToExport = filterForExport(bookmarks, selectedIds);
     return exportFileHeader + bookmarksToHtml(itemsToExport);
 }
 
-// Backup and recovery
 async function ensureBackupsDirExists(): Promise<void> {
   try {
     await fs.mkdir(backupsDir, { recursive: true });
@@ -235,15 +255,12 @@ async function ensureBackupsDirExists(): Promise<void> {
 export async function createBackup(): Promise<void> {
   await ensureBackupsDirExists();
   const currentBookmarks = await readBookmarksFile();
-  if (currentBookmarks.length === 0) return; // Don't back up empty lists
-  
+  if (currentBookmarks.length === 0) return;
   const timestamp = format(new Date(), "yyyy-MM-dd'T'HH-mm-ss");
   const backupFilePath = path.join(backupsDir, `bookmarks-${timestamp}.json`);
   await fs.writeFile(backupFilePath, JSON.stringify(currentBookmarks, null, 2), 'utf-8');
 }
 
-
-// Dead link checker
 export async function checkAllLinks(): Promise<Record<string, string>> {
   const bookmarks = await readBookmarksFile();
   const linkStatuses: Record<string, string> = {};
@@ -256,22 +273,24 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
         tasks.push((async () => {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-            const response = await fetch(item.url, { signal: controller.signal, redirect: 'manual' });
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(item.url, { signal: controller.signal, redirect: 'follow' });
             clearTimeout(timeoutId);
 
-            if (response.status >= 200 && response.status < 300) {
+            if (response.status >= 200 && response.status < 400) {
               linkStatuses[item.id] = 'ok';
-            } else if (response.status >= 300 && response.status < 400) {
-              linkStatuses[item.id] = `Redirect (${response.status})`;
             } else {
               linkStatuses[item.id] = `Error (${response.status})`;
             }
           } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') {
-              linkStatuses[item.id] = 'Timeout';
+            if (error instanceof Error) {
+                if (error.name === 'AbortError') {
+                    linkStatuses[item.id] = 'Timeout';
+                } else {
+                    linkStatuses[item.id] = 'Dead';
+                }
             } else {
-              linkStatuses[item.id] = 'Dead';
+                linkStatuses[item.id] = 'Unknown Error';
             }
           }
         })());
@@ -282,6 +301,33 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
   }
 
   traverse(bookmarks);
-  await Promise.all(tasks);
+  await Promise.allSettled(tasks);
   return linkStatuses;
+}
+
+// Navigation helpers
+export function findItem(items: BookmarkItem[], itemId: string | null): BookmarkItem | undefined {
+  if (!itemId) return undefined;
+  for (const item of items) {
+    if (item.id === itemId) return item;
+    if (item.type === 'folder') {
+      const found = findItem(item.children, itemId);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+export function findPath(items: BookmarkItem[], itemId: string, path: Folder[] = []): Folder[] | null {
+    for (const item of items) {
+        if (item.id === itemId) {
+            return path;
+        }
+        if (item.type === 'folder') {
+            const newPath = [...path, item];
+            const result = findPath(item.children, itemId, newPath);
+            if (result) return result;
+        }
+    }
+    return null;
 }
