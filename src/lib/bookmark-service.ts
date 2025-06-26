@@ -1,9 +1,8 @@
-
 // This is a server-only module.
 import 'server-only';
 import fs from 'fs/promises';
 import path from 'path';
-import type { Bookmark, BookmarkItem, Folder } from '@/types';
+import type { BookmarkItem, Folder } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -30,18 +29,18 @@ async function readBookmarksFile(): Promise<BookmarkItem[]> {
 }
 
 async function writeBookmarksFile(bookmarks: BookmarkItem[]): Promise<void> {
-  noStore();
   const data = JSON.stringify(bookmarks, null, 2);
   await fs.writeFile(bookmarksFilePath, data, 'utf-8');
 }
 
 export async function getBookmarks(): Promise<BookmarkItem[]> {
   const bookmarks = await readBookmarksFile();
+  // Ensure all items have a creation date for sorting
   let needsWrite = false;
   const addTimestamp = (items: BookmarkItem[]) => {
     items.forEach(item => {
       if (!item.createdAt) {
-        item.createdAt = new Date(0).toISOString();
+        item.createdAt = new Date(0).toISOString(); // Old items get a default old date
         needsWrite = true;
       }
       if (item.type === 'folder') {
@@ -75,16 +74,19 @@ export async function saveItem(itemToSave: BookmarkItem, parentId: string | null
   const bookmarks = await readBookmarksFile();
 
   let itemWasUpdated = false;
+  // Try to find and update an existing item
   findAndMutate(bookmarks, (item) => item.id === itemToSave.id, (items, index) => {
-    const currentItem = items[index];
-    if (currentItem.type === 'folder' && itemToSave.type === 'folder') {
-      (itemToSave as Folder).children = currentItem.children;
+    // Preserve children if it's a folder being updated
+    if (items[index].type === 'folder' && itemToSave.type === 'folder') {
+      (itemToSave as Folder).children = (items[index] as Folder).children;
     }
-    itemToSave.createdAt = currentItem.createdAt || new Date().toISOString();
+    // Preserve original creation date
+    itemToSave.createdAt = items[index].createdAt || new Date().toISOString();
     items[index] = itemToSave;
     itemWasUpdated = true;
   });
 
+  // If it's a new item, add it
   if (!itemWasUpdated) {
     itemToSave.createdAt = new Date().toISOString();
     if (parentId) {
@@ -99,6 +101,7 @@ export async function saveItem(itemToSave: BookmarkItem, parentId: string | null
   await writeBookmarksFile(bookmarks);
 }
 
+// Recursively removes an item by ID from a list of items
 function deleteItemRecursive(items: BookmarkItem[], idToDelete: string): BookmarkItem[] {
     const filteredItems = items.filter(item => item.id !== idToDelete);
     return filteredItems.map(item => {
@@ -122,83 +125,32 @@ export async function overwriteBookmarks(items: BookmarkItem[]): Promise<void> {
     await writeBookmarksFile(items);
 }
 
-function normalizeUrl(url: string): string {
-  if (!url) return '';
-  try {
-    const urlObj = new URL(url);
-    let hostname = urlObj.hostname.replace(/^www\./, '');
-    let path = urlObj.pathname.replace(/\/$/, '');
-    return (hostname + path + urlObj.search + urlObj.hash).toLowerCase();
-  } catch (e) {
-    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase();
-  }
-}
-
-
-function getAllUrls(items: BookmarkItem[], urlMap: Map<string, boolean> = new Map()): Map<string, boolean> {
-    for (const item of items) {
+function getAllUrls(items: BookmarkItem[]): Set<string> {
+    const urls = new Set<string>();
+    items.forEach(item => {
         if (item.type === 'bookmark') {
-            urlMap.set(normalizeUrl(item.url), true);
+            urls.add(item.url);
         } else if (item.type === 'folder') {
-            getAllUrls(item.children, urlMap);
-        }
-    }
-    return urlMap;
-}
-
-export async function compareBookmarks(newItems: BookmarkItem[]): Promise<BookmarkItem[]> {
-    const existingBookmarks = await readBookmarksFile();
-    const existingUrls = getAllUrls(existingBookmarks);
-
-    function filterNew(items: BookmarkItem[]): BookmarkItem[] {
-        const result: BookmarkItem[] = [];
-        for (const item of items) {
-            if (item.type === 'bookmark') {
-                if (!existingUrls.has(normalizeUrl(item.url))) {
-                    result.push(item);
-                }
-            } else if (item.type === 'folder') {
-                const newChildren = filterNew(item.children);
-                if (newChildren.length > 0) {
-                     result.push({ ...item, children: newChildren });
-                }
-            }
-        }
-        return result;
-    }
-
-    return filterNew(newItems);
-}
-
-
-function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[], existingUrls: Map<string, boolean>) {
-    newItems.forEach(newItem => {
-        if (newItem.type === 'bookmark') {
-            const normalized = normalizeUrl(newItem.url);
-            if (!existingUrls.has(normalized)) {
-                existingItems.push(newItem);
-                existingUrls.set(normalized, true);
-            }
-        } else if (newItem.type === 'folder') {
-            const existingFolder = existingItems.find(
-                (item): item is Folder => item.type === 'folder' && item.title === newItem.title
-            );
-
-            if (existingFolder) {
-                mergeItems(existingFolder.children, newItem.children, existingUrls);
-            } else {
-                existingItems.push(newItem);
-                getAllUrls(newItem.children, existingUrls);
-            }
+            getAllUrls(item.children).forEach(url => urls.add(url));
         }
     });
+    return urls;
 }
 
 export async function mergeBookmarks(items: BookmarkItem[]): Promise<void> {
     const existingBookmarks = await readBookmarksFile();
     const existingUrls = getAllUrls(existingBookmarks);
-    mergeItems(existingBookmarks, items, existingUrls);
-    await writeBookmarksFile(existingBookmarks);
+
+    const newItems = items.filter(item => {
+        if (item.type === 'bookmark') {
+            return !existingUrls.has(item.url);
+        }
+        // For now, we'll just add new folders, a more complex merge could be implemented
+        return !existingBookmarks.some(b => b.type === 'folder' && b.title === item.title);
+    });
+
+    const updatedBookmarks = [...existingBookmarks, ...newItems];
+    await writeBookmarksFile(updatedBookmarks);
 }
 
 function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
@@ -233,21 +185,25 @@ export async function exportBookmarks(): Promise<string> {
 }
 
 function filterForExport(items: BookmarkItem[], selectedIds: Set<string>): BookmarkItem[] {
-    return items.reduce((acc, item) => {
+    const result: BookmarkItem[] = [];
+    items.forEach(item => {
         if (selectedIds.has(item.id)) {
             if (item.type === 'folder') {
-                 acc.push({ ...item, children: filterForExport(item.children, selectedIds) });
+                 // If a folder is selected, include it and its (potentially filtered) children
+                 result.push({ ...item, children: filterForExport(item.children, selectedIds) });
             } else {
-                acc.push(item);
+                result.push(item);
             }
         } else if (item.type === 'folder') {
+            // If a folder is not selected, still check its children
             const filteredChildren = filterForExport(item.children, selectedIds);
             if (filteredChildren.length > 0) {
-                acc.push({ ...item, children: filteredChildren });
+                // If any children are selected, include the folder but only with those children
+                result.push({ ...item, children: filteredChildren });
             }
         }
-        return acc;
-    }, [] as BookmarkItem[]);
+    });
+    return result;
 }
 
 export async function exportSelectedBookmarks(ids: string[]): Promise<string> {
@@ -277,6 +233,7 @@ export async function createBackup(): Promise<void> {
 }
 
 export async function checkAllLinks(): Promise<Record<string, string>> {
+  noStore();
   const bookmarks = await readBookmarksFile();
   const linkStatuses: Record<string, string> = {};
   
@@ -288,7 +245,7 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
         tasks.push((async () => {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
             const response = await fetch(item.url, { signal: controller.signal, redirect: 'follow' });
             clearTimeout(timeoutId);
 

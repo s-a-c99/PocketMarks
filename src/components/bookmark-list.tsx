@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useTransition, useRef } from "react";
@@ -6,11 +5,8 @@ import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
-import { FolderCard } from "./folder-card";
 import { ItemDialog } from "./item-dialog";
 import { PasswordConfirmationDialog } from "./password-confirmation-dialog";
-import { SyncComparisonDialog } from "./sync-comparison-dialog";
-import { BreadcrumbNav } from "./breadcrumb-nav";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -21,8 +17,13 @@ import {
   exportBookmarksAction,
   exportSelectedBookmarksAction,
   checkDeadLinksAction,
-  compareBookmarksAction
 } from "@/lib/actions";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,78 +34,40 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Pencil, Trash2 } from "lucide-react";
+import { Checkbox } from "./ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-
-function findItem(items: BookmarkItem[], itemId: string): BookmarkItem | undefined {
-    if (!itemId) return undefined;
-    for (const item of items) {
-        if (item.id === itemId) return item;
-        if (item.type === 'folder') {
-            const found = findItem(item.children, itemId);
-            if (found) return found;
-        }
-    }
-    return undefined;
-}
-
-function findPath(items: BookmarkItem[], itemId: string): Folder[] {
-    const find = (
-        currentItems: BookmarkItem[],
-        idToFind: string,
-        currentPath: Folder[]
-    ): Folder[] | null => {
-        for (const item of currentItems) {
-            if (item.id === idToFind) {
-                // If it's a folder, path includes the item. If bookmark, it's just the parents.
-                return item.type === 'folder' ? [...currentPath, item] : currentPath;
-            }
-
-            if (item.type === 'folder') {
-                const newPath = [...currentPath, item];
-                const result = find(item.children, idToFind, newPath);
-                if (result) return result;
-            }
-        }
-        return null;
-    };
-    return find(items, itemId, []) || [];
-}
 
 function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
-    if (!term) return items;
-    const lowerCaseTerm = term.toLowerCase();
+  if (!term) return items;
+  const lowerCaseTerm = term.toLowerCase();
 
-    return items.reduce((acc, item) => {
-        if (item.title.toLowerCase().includes(lowerCaseTerm)) {
-            if (item.type === 'folder') {
-                acc.push({ ...item, children: filterItems(item.children, term) });
-            } else {
-                acc.push(item);
-            }
-            return acc;
-        }
+  return items.reduce((acc, item) => {
+    if (item.title.toLowerCase().includes(lowerCaseTerm)) {
+      acc.push(item);
+      return acc;
+    }
 
-        if (item.type === 'folder') {
-            const matchingChildren = filterItems(item.children, term);
-            if (matchingChildren.length > 0) {
-                acc.push({ ...item, children: matchingChildren });
-            }
-        } else if (item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm)) {
-            acc.push(item);
-        }
-        return acc;
-    }, [] as BookmarkItem[]);
+    if (item.type === 'folder') {
+      const matchingChildren = filterItems(item.children, term);
+      if (matchingChildren.length > 0) {
+        acc.push({ ...item, children: matchingChildren });
+      }
+    } else if (item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm)) {
+      acc.push(item);
+    }
+    return acc;
+  }, [] as BookmarkItem[]);
 }
 
 
 export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] }) {
+  const [items, setItems] = useState<BookmarkItem[]>(initialItems);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<BookmarkItem | null>(null);
-  const [itemToDelete, setItemToDelete] = useState<BookmarkItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -115,10 +78,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [linkStatuses, setLinkStatuses] = useState<Record<string, string>>({});
 
-  const [sortOrder, setSortOrder] = useState("date-desc");
-  
-  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
-  const [itemsToCompare, setItemsToCompare] = useState<BookmarkItem[]>([]);
+  useMemo(() => {
+    setItems(initialItems);
+  }, [initialItems]);
 
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
@@ -136,15 +98,15 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (item: BookmarkItem) => {
-    setItemToDelete(item);
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
   };
   
   const confirmDelete = () => {
     if (!itemToDelete) return;
     startTransition(() => {
-      deleteItemAction(itemToDelete.id).then(() => {
-        toast({ title: "Item deleted", description: `"${itemToDelete.title}" has been removed.` });
+      deleteItemAction(itemToDelete).then(() => {
+        toast({ title: "Item deleted", description: "The item has been removed." });
         setItemToDelete(null);
       });
     });
@@ -164,7 +126,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     }
 
     startTransition(() => {
-        saveItemAction(itemToSave, currentFolderId).then(() => {
+        saveItemAction(itemToSave, null).then(() => {
              toast({
                 title: `${itemToSave.type.charAt(0).toUpperCase() + itemToSave.type.slice(1)} ${isEditing ? 'updated' : 'added'}`,
                 description: `"${itemToSave.title}" has been saved.`
@@ -192,87 +154,55 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         const doc = parser.parseFromString(content, "text/html");
 
         const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
-            const items: BookmarkItem[] = [];
-            if (!root || !root.children) return items;
-
-            for (let i = 0; i < root.children.length; i++) {
-                const node = root.children[i];
-
-                if (node.tagName !== 'DT') {
-                    continue;
-                }
+            let items: BookmarkItem[] = [];
+            // Direct children of DL/P are DTs
+            for (const child of Array.from(root.children)) {
+              if (child.tagName === 'DT') {
+                const a = child.querySelector('A');
+                const h3 = child.querySelector('H3');
                 
-                const h3 = node.querySelector('H3');
-                const a = node.querySelector('A');
-
-                if (!h3 && !a) {
-                    continue;
-                }
-
                 const add_date_attr = a?.getAttribute('add_date') || h3?.getAttribute('add_date');
                 const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
                 const createdAt = new Date(add_date).toISOString();
 
                 if (h3) { // It's a folder
-                    const nextElement = root.children[i + 1];
-                    let children: BookmarkItem[] = [];
-                    if (nextElement && nextElement.tagName === 'DL') {
-                        children = parseBookmarksRecursive(nextElement);
-                        i++;
-                    }
-
-                    items.push({
-                        id: uuidv4(),
-                        type: 'folder',
-                        title: h3.textContent || 'Untitled Folder',
-                        children: children,
-                        createdAt: createdAt,
-                    });
-
+                  const dl = child.nextElementSibling;
+                  const children = dl && dl.tagName === 'DL' ? parseBookmarksRecursive(dl) : [];
+                  items.push({
+                    id: uuidv4(),
+                    type: 'folder',
+                    title: h3.textContent || 'Untitled Folder',
+                    children: children,
+                    createdAt: createdAt,
+                  });
                 } else if (a) { // It's a bookmark
-                    const url = a.getAttribute('href');
-                    const title = a.textContent || 'Untitled Bookmark';
-                    if (url) {
-                        items.push({
-                            id: uuidv4(),
-                            type: 'bookmark',
-                            title: title,
-                            url: url,
-                            createdAt: createdAt,
-                        });
-                    }
+                  const url = a.getAttribute('href');
+                  const title = a.textContent || 'Untitled Bookmark';
+                  if (url) {
+                    items.push({
+                      id: uuidv4(),
+                      type: 'bookmark',
+                      title: title,
+                      url: url,
+                      createdAt: createdAt,
+                    });
+                  }
                 }
+              }
             }
             return items;
         };
-        
-        const rootDL = doc.querySelector('body > dl');
-        if (!rootDL) {
-             toast({ variant: "destructive", title: "Import Failed", description: "Could not find a valid bookmark list in the file." });
-             if(event.target) event.target.value = '';
-             return;
-        }
 
-        const importedItems = parseBookmarksRecursive(rootDL);
-        
-        if (importedItems.length === 0) {
-            toast({ variant: "destructive", title: "Import Failed", description: "No bookmarks or folders were found in the file." });
-            if(event.target) event.target.value = '';
-            return;
-        }
+        const importedItems = parseBookmarksRecursive(doc.body);
         
         if (mode === 'replace') {
             setPendingImportData(importedItems);
             setIsPasswordDialogOpen(true);
-        } else { // mode === 'merge'
-            startTransition(async () => {
-                const itemsForComparison = await compareBookmarksAction(importedItems);
-                if (itemsForComparison.length > 0) {
-                    setItemsToCompare(itemsForComparison);
-                    setIsSyncDialogOpen(true);
-                } else {
-                    toast({ title: "Nothing to import", description: "Your bookmarks are already up to date." });
-                }
+        } else {
+            startTransition(() => {
+                importBookmarksAction(importedItems, 'merge').then(() => {
+                    toast({ title: "Import Successful", description: "Your bookmarks have been merged." });
+                })
             });
         }
     };
@@ -283,15 +213,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
     reader.readAsText(file);
     if(event.target) event.target.value = '';
-  };
-
-
-  const handleSyncConfirm = (itemsToImport: BookmarkItem[]) => {
-      startTransition(() => {
-          importBookmarksAction(itemsToImport, 'merge').then(() => {
-              toast({ title: "Import Successful", description: "Your new bookmarks have been merged." });
-          })
-      });
   };
   
   const handlePasswordConfirm = (password: string) => {
@@ -361,8 +282,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
   
   const handleSelectionChange = (itemId: string, checked: boolean) => {
-    const currentItemsForSelection = currentItems || initialItems;
-    const item = findItem(currentItemsForSelection, itemId);
+    const item = [...items].flatMap(i => i.type === 'folder' ? [i, ...i.children] : [i]).find(i => i.id === itemId);
     if (!item) return;
 
     const idsToChange = getDescendantIds(item);
@@ -377,86 +297,79 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         return newSet;
     });
   };
-  
-  const handleNavigate = (folderId: string | null) => {
-    if (folderId === currentFolderId) return;
-    setCurrentFolderId(folderId);
-    setSearchTerm("");
-    setSelectedIds(new Set());
-  };
-  
-  const currentItems = useMemo(() => {
-    if (!currentFolderId) return initialItems;
-    const folder = findItem(initialItems, currentFolderId);
-    return folder && folder.type === 'folder' ? folder.children : [];
-  }, [currentFolderId, initialItems]);
-  
- const breadcrumbs = useMemo(() => {
-    if (!currentFolderId) return [];
-    return findPath(initialItems, currentFolderId);
-  }, [currentFolderId, initialItems]);
 
+  const filteredItems = useMemo(() => filterItems(items, searchTerm), [items, searchTerm]);
 
-  const sortedItems = useMemo(() => {
-    const itemsToSort = JSON.parse(JSON.stringify(currentItems));
-    const sortFn = (a: BookmarkItem, b: BookmarkItem) => {
-      if (a.type === 'folder' && b.type === 'bookmark') return -1;
-      if (a.type === 'bookmark' && b.type === 'folder') return 1;
-
-      switch (sortOrder) {
-        case 'date-asc': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case 'date-desc': return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'alpha-asc': return a.title.localeCompare(b.title);
-        case 'alpha-desc': return b.title.localeCompare(a.title);
-        default: return 0;
-      }
-    };
-    return itemsToSort.sort(sortFn);
-  }, [currentItems, sortOrder]);
-
-  const filteredItems = useMemo(() => filterItems(sortedItems, searchTerm), [sortedItems, searchTerm]);
+  const renderItems = (itemsToRender: BookmarkItem[], isSublevel = false) => (
+    <div className={`space-y-4 ${isSublevel ? 'pl-4' : ''}`}>
+      {itemsToRender.map(item =>
+        item.type === 'folder' ? (
+          <Accordion key={item.id} type="single" collapsible className="w-full">
+            <AccordionItem value={item.id} className="border rounded-lg bg-card/80">
+              <AccordionTrigger className="px-4 py-2 hover:no-underline">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Checkbox
+                    id={`select-${item.id}`}
+                    checked={selectedIds.has(item.id)}
+                    onCheckedChange={(checked) => handleSelectionChange(item.id, !!checked)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <FolderPlus className="h-5 w-5 text-primary" />
+                  <span className="font-headline text-base truncate">{item.title}</span>
+                  <span className="text-sm text-muted-foreground">({item.children.length})</span>
+                </div>
+                <div className="flex items-center gap-2 mr-2">
+                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleEdit(item); }}>
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/80 hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-4 pt-0">
+                {renderItems(item.children, true)}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        ) : (
+          <BookmarkCard 
+            key={item.id} 
+            bookmark={item}
+            status={linkStatuses[item.id]} 
+            onEdit={handleEdit} 
+            onDelete={handleDelete} 
+            isSelected={selectedIds.has(item.id)} 
+            onSelectionChange={handleSelectionChange}
+          />
+        )
+      )}
+    </div>
+  );
 
   return (
     <div className="w-full">
-      <div className="flex flex-col md:flex-row gap-4 mb-4 flex-wrap">
-        <div className="flex-grow flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-grow">
-              <Input
-                placeholder="Search bookmarks, folders..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-                disabled={isPending || isCheckingLinks}
-              />
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-sm text-muted-foreground">Sort:</span>
-              <Select value={sortOrder} onValueChange={setSortOrder}>
-                  <SelectTrigger className="w-full sm:w-[180px] h-10">
-                      <SelectValue placeholder="Sort order" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="date-desc">Date (Newest)</SelectItem>
-                      <SelectItem value="date-asc">Date (Oldest)</SelectItem>
-                      <SelectItem value="alpha-asc">Title (A-Z)</SelectItem>
-                      <SelectItem value="alpha-desc">Title (Z-A)</SelectItem>
-                  </SelectContent>
-              </Select>
-            </div>
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-grow">
+          <Input
+            placeholder="Search bookmarks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-11 text-base"
+            disabled={isPending || isCheckingLinks}
+          />
+           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
-
         <div className="flex gap-2 flex-wrap">
-            <Button onClick={handleAddNewBookmark} className="font-headline" disabled={isPending || isCheckingLinks}>
-                <Plus className="mr-2 h-4 w-4" /> Bookmark
+            <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                <Plus className="mr-2 h-4 w-4" /> Add Bookmark
             </Button>
-            <Button onClick={handleAddNewFolder} variant="outline" className="font-headline" disabled={isPending || isCheckingLinks}>
-                <FolderPlus className="mr-2 h-4 w-4" /> Folder
+            <Button onClick={handleAddNewFolder} variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
             </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="font-headline" disabled={isPending || isCheckingLinks}>
+                <Button variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
                   Import <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -470,9 +383,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" className="font-headline" onClick={handleExport} disabled={isPending || isCheckingLinks}>Export All</Button>
-            <Button variant="outline" className="font-headline" onClick={handleExportSelected} disabled={isPending || isCheckingLinks || selectedIds.size === 0}>Export Selected</Button>
-            <Button variant="outline" className="font-headline" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
+            <Button variant="outline" className="font-headline h-11" onClick={handleExport} disabled={isPending || isCheckingLinks}>Export All</Button>
+            <Button variant="outline" className="font-headline h-11" onClick={handleExportSelected} disabled={isPending || isCheckingLinks || selectedIds.size === 0}>Export Selected</Button>
+            <Button variant="outline" className="font-headline h-11" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
                 {isCheckingLinks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2Off className="mr-2 h-4 w-4" />}
                 Check for dead links
             </Button>
@@ -480,40 +393,14 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         </div>
       </div>
       
-      <BreadcrumbNav path={breadcrumbs} onNavigate={handleNavigate} />
-      
       {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 mt-4">
-          {filteredItems.map(item => (
-            item.type === 'folder' ? (
-              <FolderCard 
-                key={item.id} 
-                folder={item} 
-                onEdit={handleEdit} 
-                onDelete={() => handleDelete(item)} 
-                onNavigate={() => handleNavigate(item.id)}
-                isSelected={selectedIds.has(item.id)}
-                onSelectionChange={handleSelectionChange}
-              />
-            ) : (
-              <BookmarkCard 
-                key={item.id} 
-                bookmark={item}
-                status={linkStatuses[item.id]} 
-                onEdit={handleEdit} 
-                onDelete={() => handleDelete(item)} 
-                isSelected={selectedIds.has(item.id)} 
-                onSelectionChange={handleSelectionChange}
-              />
-            )
-          ))}
-        </div>
+        renderItems(filteredItems)
       ) : (
-        <div className="text-center py-16 border-2 border-dashed rounded-lg mt-4">
-            <h3 className="text-xl font-semibold text-muted-foreground font-headline">No Items Found</h3>
+        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+            <h3 className="text-2xl font-semibold text-muted-foreground font-headline">No Bookmarks Found</h3>
             <p className="mt-2 text-muted-foreground">
-                {searchTerm ? "Try a different search term or " : "This folder is empty. "}
-                <button onClick={handleAddNewBookmark} className="text-primary hover:underline font-semibold">add a bookmark now</button>.
+                {searchTerm ? "Try a different search term or " : "Your bookmark list is empty. "}
+                <button onClick={handleAddNewBookmark} className="text-primary hover:underline font-semibold">add one now</button>.
             </p>
         </div>
       )}
@@ -524,14 +411,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         onItemSaved={handleSaveItem}
         itemToEdit={itemToEdit}
       />
-      
-      <SyncComparisonDialog
-        isOpen={isSyncDialogOpen}
-        setIsOpen={setIsSyncDialogOpen}
-        itemsToCompare={itemsToCompare}
-        onConfirm={handleSyncConfirm}
-      />
-
       <PasswordConfirmationDialog
         isOpen={isPasswordDialogOpen}
         setIsOpen={setIsPasswordDialogOpen}
@@ -539,14 +418,13 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         title="Confirm Replacement"
         description="This is a destructive action. To proceed, please enter your password to confirm you want to replace all your current bookmarks."
       />
-
+      
       <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete "{itemToDelete?.title}"
-                    {itemToDelete?.type === 'folder' && ' and all of its contents'}.
+                    This action cannot be undone. This will permanently delete the selected item and, if it's a folder, all of its contents.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -560,5 +438,3 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     </div>
   );
 }
-
-    

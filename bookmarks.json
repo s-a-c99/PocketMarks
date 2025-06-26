@@ -14,20 +14,6 @@
     "createdAt": "2025-05-17T21:53:25.000Z"
   },
   {
-    "id": "6b751940-b825-408b-a74d-ebab8497cb2c",
-    "type": "folder",
-    "title": "sac99-r41d3r",
-    "children": [],
-    "createdAt": "2025-05-17T21:53:25.000Z"
-  },
-  {
-    "id": "556ad69c-b5a2-401f-92a1-37dcfc3785b1",
-    "type": "folder",
-    "title": "Trash",
-    "children": [],
-    "createdAt": "2025-06-26T09:26:26.000Z"
-  },
-  {
     "id": "2e2821bb-a74b-47da-a9de-bf65aa454557",
     "type": "folder",
     "title": "Unsorted bookmarks",
@@ -47,5 +33,12 @@
     "title": "Other bookmarks",
     "children": [],
     "createdAt": "2025-05-17T21:53:25.000Z"
+  },
+  {
+    "id": "d17ae309-4ce9-454e-a33f-16a1fe1c1f89",
+    "type": "folder",
+    "title": "sfhfsshsfhsf",
+    "createdAt": "2025-06-26T15:08:57.152Z",
+    "children": []
   }
 ]

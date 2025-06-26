@@ -11,8 +11,7 @@ import {
   exportSelectedBookmarks, 
   mergeBookmarks,
   createBackup,
-  checkAllLinks,
-  compareBookmarks
+  checkAllLinks
 } from './bookmark-service';
 import type { BookmarkItem } from '@/types';
 
@@ -103,8 +102,4 @@ export async function exportSelectedBookmarksAction(ids: string[]): Promise<stri
 
 export async function checkDeadLinksAction(): Promise<Record<string, string>> {
   return await checkAllLinks();
-}
-
-export async function compareBookmarksAction(items: BookmarkItem[]): Promise<BookmarkItem[]> {
-  return await compareBookmarks(items);
 }
