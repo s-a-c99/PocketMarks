@@ -11,7 +11,7 @@ import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 
 export function BookmarkList() {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>(mockBookmarks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>(mockBookmarks.sort((a, b) => a.title.localeCompare(b.title)));
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [bookmarkToEdit, setBookmarkToEdit] = useState<Bookmark | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,7 +41,7 @@ export function BookmarkList() {
       newBookmarks = [bookmark, ...bookmarks];
     }
     
-    newBookmarks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    newBookmarks.sort((a, b) => a.title.localeCompare(b.title));
     setBookmarks(newBookmarks);
     
     toast({
@@ -55,9 +55,7 @@ export function BookmarkList() {
     return bookmarks.filter(
       (b) =>
         b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
+        b.url.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [bookmarks, searchTerm]);
 

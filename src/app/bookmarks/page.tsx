@@ -13,7 +13,7 @@ export default function BookmarksPage() {
         <BookmarkList />
       </div>
       <footer className="py-6 text-center text-muted-foreground text-sm border-t">
-          <p>&copy; {new Date().getFullYear()} PocketMarks. Securely yours.</p>
+          <p>&copy; {new Date().getFullYear()} PocketMarks. All rights reserved.</p>
       </footer>
     </main>
   );
