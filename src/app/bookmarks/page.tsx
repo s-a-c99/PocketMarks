@@ -12,7 +12,7 @@ export default async function BookmarksPage() {
   return (
     <main className="min-h-screen w-full bg-background text-foreground">
       <header className="py-2 bg-card/50 border-b">
-        <div className="container mx-auto">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center">
               <div className="flex items-baseline gap-3">
                 <h1 className="text-xl font-headline text-primary">PocketMarks</h1>
@@ -29,7 +29,7 @@ export default async function BookmarksPage() {
             </div>
         </div>
       </header>
-      <div className="container mx-auto py-8">
+      <div className="w-full py-8 px-4 sm:px-6 lg:px-8">
         <BookmarkList initialItems={bookmarks} />
       </div>
       <AppFooter />

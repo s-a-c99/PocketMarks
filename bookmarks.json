@@ -2,7 +2,13 @@
   {
     "id": "8180560d-be7e-4487-ac5f-1fa9c8073bc9",
     "type": "bookmark",
-    "title": "Firebase Studio",
-    "url": "https://studio.firebase.google.com"
+    "title": "example",
+    "url": "https://example.com"
+  },
+  {
+    "id": "4a9ac3ad-3e4d-48c5-a610-1f3261f6a26d",
+    "type": "bookmark",
+    "title": "example1",
+    "url": "https://example1.com"
   }
 ]
