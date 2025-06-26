@@ -1,6 +1,9 @@
 import { BookmarkList } from "@/components/bookmark-list";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AppFooter } from "@/components/footer";
+import { Button } from "@/components/ui/button";
+import { logout } from "@/lib/actions";
+import { LogOut } from "lucide-react";
 
 export default function BookmarksPage() {
   return (
@@ -12,7 +15,14 @@ export default function BookmarksPage() {
                 <h1 className="text-5xl font-headline text-primary">PocketMarks</h1>
                 <p className="text-lg text-muted-foreground mt-2">Your personal space for all your favorite links.</p>
               </div>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <form action={logout}>
+                  <Button variant="outline" size="icon" type="submit" aria-label="Logout">
+                    <LogOut className="h-[1.2rem] w-[1.2rem]" />
+                  </Button>
+                </form>
+              </div>
             </div>
         </div>
       </header>
