@@ -191,46 +191,43 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         const parser = new DOMParser();
         const doc = parser.parseFromString(content, "text/html");
 
-        // NEW: Robust recursive parser
         const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
             const items: BookmarkItem[] = [];
             if (!root || !root.children) return items;
-            
-            // We iterate through all direct children of the root (which should be a DL)
+
             for (let i = 0; i < root.children.length; i++) {
                 const node = root.children[i];
 
-                // We only care about DT elements
                 if (node.tagName !== 'DT') {
                     continue;
                 }
-
+                
                 const h3 = node.querySelector('H3');
                 const a = node.querySelector('A');
-                
+
                 if (!h3 && !a) {
                     continue;
                 }
-                
+
                 const add_date_attr = a?.getAttribute('add_date') || h3?.getAttribute('add_date');
                 const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
                 const createdAt = new Date(add_date).toISOString();
 
                 if (h3) { // It's a folder
-                    const folder: Folder = {
+                    const nextElement = root.children[i + 1];
+                    let children: BookmarkItem[] = [];
+                    if (nextElement && nextElement.tagName === 'DL') {
+                        children = parseBookmarksRecursive(nextElement);
+                        i++;
+                    }
+
+                    items.push({
                         id: uuidv4(),
                         type: 'folder',
                         title: h3.textContent || 'Untitled Folder',
-                        children: [],
+                        children: children,
                         createdAt: createdAt,
-                    };
-                    
-                    // The folder's content is in the *next* sibling element, which must be a DL
-                    const nextElement = root.children[i+1];
-                    if (nextElement && nextElement.tagName === 'DL') {
-                        folder.children = parseBookmarksRecursive(nextElement);
-                    }
-                    items.push(folder);
+                    });
 
                 } else if (a) { // It's a bookmark
                     const url = a.getAttribute('href');
@@ -247,9 +244,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 }
             }
             return items;
-        }
+        };
         
-        // The root is the first <DL> tag inside the <body>
         const rootDL = doc.querySelector('body > dl');
         if (!rootDL) {
              toast({ variant: "destructive", title: "Import Failed", description: "Could not find a valid bookmark list in the file." });
@@ -264,7 +260,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             if(event.target) event.target.value = '';
             return;
         }
-
+        
         if (mode === 'replace') {
             setPendingImportData(importedItems);
             setIsPasswordDialogOpen(true);
@@ -365,7 +361,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
   
   const handleSelectionChange = (itemId: string, checked: boolean) => {
-    const item = findItem(currentItems, itemId);
+    const currentItemsForSelection = currentItems || initialItems;
+    const item = findItem(currentItemsForSelection, itemId);
     if (!item) return;
 
     const idsToChange = getDescendantIds(item);
@@ -384,6 +381,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const handleNavigate = (folderId: string | null) => {
     if (folderId === currentFolderId) return;
     setCurrentFolderId(folderId);
+    setSearchTerm("");
+    setSelectedIds(new Set());
   };
   
   const currentItems = useMemo(() => {
@@ -561,3 +560,5 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     </div>
   );
 }
+
+    
