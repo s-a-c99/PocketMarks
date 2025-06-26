@@ -23,7 +23,7 @@ export function FolderCard({ folder, onEdit, onDelete, onAddInFolder, onNavigate
   return (
     <TooltipProvider delayDuration={300}>
       <Card
-        className="transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer bg-card hover:bg-muted/50 border-primary/20"
+        className="transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer bg-primary/5 hover:bg-primary/10 border-primary/30"
         onClick={() => onNavigate(id)}
       >
         <CardHeader className="p-2 space-y-1">

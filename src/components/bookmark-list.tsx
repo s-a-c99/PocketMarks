@@ -182,39 +182,50 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       const parser = new DOMParser();
       const doc = parser.parseFromString(content, "text/html");
       
-      const parseNodes = (nodes: NodeListOf<Node>): BookmarkItem[] => {
-        const items: BookmarkItem[] = [];
-        nodes.forEach(node => {
-            if (node.nodeName === 'DT') {
-                const anchor = (node as HTMLElement).querySelector('A');
-                const header = (node as HTMLElement).querySelector('H3');
-                
-                if (anchor) {
-                    items.push({
-                        id: uuidv4(),
-                        type: 'bookmark',
-                        title: anchor.textContent || '',
-                        url: anchor.getAttribute('href') || '',
-                        createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000).toISOString()
-                    });
-                } else if (header) {
-                    const nextDl = (node as HTMLElement).nextElementSibling;
-                    items.push({
-                        id: uuidv4(),
-                        type: 'folder',
-                        title: header.textContent || '',
-                        children: nextDl && nextDl.nodeName === 'DL' ? parseNodes(nextDl.childNodes) : [],
-                        createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
-                    });
-                }
-            } else if (node.nodeName === 'DL' || node.nodeName === 'P') {
-                 items.push(...parseNodes(node.childNodes));
-            }
-        });
-        return items;
-      }
+      const parseHtmlBookmarks = (root: HTMLElement): BookmarkItem[] => {
+          const items: BookmarkItem[] = [];
+          // A <DL> can contain <DT>s directly, or they can be wrapped in a <P>
+          const childrenContainer = root.querySelector(':scope > dl > p, :scope > dl') ?? root;
+
+          for (const node of Array.from(childrenContainer.children)) {
+              if (node.nodeName !== 'DT') continue;
+
+              const anchor = node.querySelector('a');
+              const header = node.querySelector('h3');
+
+              if (anchor) {
+                  items.push({
+                      id: uuidv4(),
+                      type: 'bookmark',
+                      title: anchor.textContent || '',
+                      url: anchor.getAttribute('href') || '',
+                      createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000).toISOString()
+                  });
+              } else if (header) {
+                  const nextDl = node.nextElementSibling;
+                  if (nextDl && nextDl.nodeName === 'DL') {
+                      items.push({
+                          id: uuidv4(),
+                          type: 'folder',
+                          title: header.textContent || '',
+                          children: parseHtmlBookmarks(nextDl as HTMLElement),
+                          createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
+                      });
+                  } else {
+                       items.push({
+                          id: uuidv4(),
+                          type: 'folder',
+                          title: header.textContent || '',
+                          children: [],
+                          createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
+                      });
+                  }
+              }
+          }
+          return items;
+      };
       
-      const importedItems = parseNodes(doc.body.childNodes);
+      const importedItems = parseHtmlBookmarks(doc.body);
       
       if (mode === 'replace') {
         setPendingImportData(importedItems);
@@ -435,7 +446,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       <BreadcrumbNav path={breadcrumbs} onNavigate={handleNavigate} />
       
       {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 mt-4">
           {filteredItems.map(item => (
             item.type === 'folder' ? (
               <FolderCard 
