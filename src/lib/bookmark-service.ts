@@ -2,7 +2,7 @@
 import 'server-only';
 import fs from 'fs/promises';
 import path from 'path';
-import type { BookmarkItem, Folder } from '@/types';
+import type { Bookmark, BookmarkItem, Folder } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const bookmarksFilePath = path.join(process.cwd(), 'bookmarks.json');
@@ -95,6 +95,49 @@ export async function deleteItem(id: string): Promise<void> {
 export async function overwriteBookmarks(items: BookmarkItem[]): Promise<void> {
     await writeBookmarksFile(items);
 }
+
+function getAllUrls(items: BookmarkItem[], urlSet: Set<string> = new Set()): Set<string> {
+    for (const item of items) {
+        if (item.type === 'bookmark') {
+            urlSet.add(item.url);
+        } else if (item.type === 'folder') {
+            getAllUrls(item.children, urlSet);
+        }
+    }
+    return urlSet;
+}
+
+function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[], existingUrls: Set<string>) {
+    newItems.forEach(newItem => {
+        if (newItem.type === 'bookmark') {
+            if (!existingUrls.has(newItem.url)) {
+                existingItems.push(newItem);
+                existingUrls.add(newItem.url);
+            }
+        } else if (newItem.type === 'folder') {
+            const existingFolder = existingItems.find(
+                (item): item is Folder => item.type === 'folder' && item.title === newItem.title
+            );
+
+            if (existingFolder) {
+                mergeItems(existingFolder.children, newItem.children, existingUrls);
+            } else {
+                existingItems.push(newItem);
+                getAllUrls(newItem.children, existingUrls);
+            }
+        }
+    });
+}
+
+export async function mergeBookmarks(items: BookmarkItem[]): Promise<void> {
+    const existingBookmarks = await readBookmarksFile();
+    const existingUrls = getAllUrls(existingBookmarks);
+
+    mergeItems(existingBookmarks, items, existingUrls);
+
+    await writeBookmarksFile(existingBookmarks);
+}
+
 
 function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
     const indent = '    '.repeat(indentLevel);

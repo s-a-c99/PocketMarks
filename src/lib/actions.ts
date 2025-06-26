@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { saveItem, deleteItem, overwriteBookmarks, exportBookmarks } from './bookmark-service';
+import { saveItem, deleteItem, overwriteBookmarks, exportBookmarks, mergeBookmarks } from './bookmark-service';
 import type { BookmarkItem } from '@/types';
 
 const SESSION_COOKIE_NAME = 'pocketmarks_session';
@@ -51,8 +51,12 @@ export async function deleteItemAction(id: string) {
   revalidatePath('/bookmarks');
 }
 
-export async function importBookmarksAction(items: BookmarkItem[]) {
-  await overwriteBookmarks(items);
+export async function importBookmarksAction(items: BookmarkItem[], mode: 'merge' | 'replace') {
+  if (mode === 'replace') {
+    await overwriteBookmarks(items);
+  } else {
+    await mergeBookmarks(items);
+  }
   revalidatePath('/bookmarks');
 }
 

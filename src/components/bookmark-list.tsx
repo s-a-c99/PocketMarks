@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, Fragment, useRef } from "react";
-import { Plus, Folder as FolderIcon, FolderPlus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Folder as FolderIcon, FolderPlus, Pencil, Trash2, ChevronDown } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { Bookmark, BookmarkItem, Folder } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -22,6 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -69,6 +75,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importModeRef = useRef<'merge' | 'replace'>('merge');
 
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
@@ -131,7 +138,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     });
   };
 
-  const handleImportClick = () => {
+  const handleImportClick = (mode: 'merge' | 'replace') => {
+    importModeRef.current = mode;
     fileInputRef.current?.click();
   }
 
@@ -180,7 +188,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       const importedItems = parseNodes(doc.body.childNodes);
       
       startTransition(() => {
-        importBookmarksAction(importedItems).then(() => {
+        importBookmarksAction(importedItems, importModeRef.current).then(() => {
           toast({ title: "Import Successful", description: "Your bookmarks have been imported." });
         })
       });
@@ -258,7 +266,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-4 pt-0">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                       {folder.children.map(item => (
                           <Fragment key={item.id}>
                               {item.type === 'bookmark' && <BookmarkCard bookmark={item} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} />}
@@ -271,7 +279,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
           ))}
         </Accordion>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mt-4">
             {bookmarks.map((bookmark) => (
                 <BookmarkCard key={bookmark.id} bookmark={bookmark} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} />
             ))}
@@ -300,7 +308,23 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             <Button onClick={handleAddNewFolder} variant="outline" className="font-headline w-full md:w-auto" disabled={isPending}>
                 <FolderPlus className="mr-2 h-4 w-4" /> Folder
             </Button>
-            <Button variant="outline" className="font-headline hidden md:inline-flex" onClick={handleImportClick} disabled={isPending}>Import</Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="font-headline hidden md:inline-flex" disabled={isPending}>
+                  Import <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleImportClick('merge')}>
+                  Merge with existing
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleImportClick('replace')} className="text-destructive">
+                  Replace all
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button variant="outline" className="font-headline hidden md:inline-flex" onClick={handleExport} disabled={isPending}>Export</Button>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
         </div>
