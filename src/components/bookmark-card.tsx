@@ -9,15 +9,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Bookmark } from "@/types";
 
 type BookmarkCardProps = {
   bookmark: Bookmark;
   onEdit: (bookmark: Bookmark) => void;
   onDelete: (id: string) => void;
+  isSelected: boolean;
+  onSelectionChange: (id: string, checked: boolean) => void;
 };
 
-export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, onEdit, onDelete, isSelected, onSelectionChange }: BookmarkCardProps) {
   const { id, title, url } = bookmark;
 
   return (
@@ -25,28 +28,38 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
       <Card className="transition-all hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between">
         <CardHeader className="p-2 space-y-1">
           <div className="flex justify-between items-start gap-2">
-             <Tooltip>
-              <TooltipTrigger asChild>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 min-w-0"
-                >
-                    <CardTitle className="font-headline text-xs font-semibold truncate cursor-pointer text-left hover:text-primary">
-                    {title}
-                    </CardTitle>
-                </a>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{title}</p>
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              <Checkbox
+                id={`select-${id}`}
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelectionChange(id, !!checked)}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Select ${title}`}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 min-w-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                      <CardTitle className="font-headline text-xs font-semibold truncate cursor-pointer text-left hover:text-primary">
+                      {title}
+                      </CardTitle>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{title}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
 
             <div className="flex items-center gap-1 shrink-0">
                <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button asChild variant="ghost" size="icon" className="h-6 w-6">
+                    <Button asChild variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
                         <a href={url} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="h-3 w-3" />
                         </a>
@@ -60,7 +73,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        onClick={() => onEdit(bookmark)}
+                        onClick={(e) => { e.stopPropagation(); onEdit(bookmark); }}
                     >
                         <Pencil className="h-3 w-3" />
                     </Button>
@@ -73,7 +86,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-destructive/80 hover:text-destructive"
-                        onClick={() => onDelete(id)}
+                        onClick={(e) => { e.stopPropagation(); onDelete(id); }}
                     >
                         <Trash2 className="h-3 w-3" />
                     </Button>
@@ -85,7 +98,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
           <Tooltip>
             <TooltipTrigger asChild>
               <p
-                className="text-[11px] text-muted-foreground/90 flex items-center gap-1 truncate cursor-default"
+                className="text-[11px] text-muted-foreground/90 flex items-center gap-1 truncate cursor-default ml-8"
               >
                 <span className="truncate">{url.replace(/^https?:\/\/(www\.)?/, '')}</span>
               </p>

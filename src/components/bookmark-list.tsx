@@ -8,8 +8,9 @@ import { BookmarkCard } from "./bookmark-card";
 import { ItemDialog } from "./item-dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Checkbox } from "./ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { deleteItemAction, saveItemAction, importBookmarksAction, exportBookmarksAction } from "@/lib/actions";
+import { deleteItemAction, saveItemAction, importBookmarksAction, exportBookmarksAction, exportSelectedBookmarksAction } from "@/lib/actions";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card } from "./ui/card";
 import {
@@ -74,6 +75,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [dialogParentId, setDialogParentId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<BookmarkItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -200,23 +202,73 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     event.target.value = ''; // Reset input
   };
   
+  const downloadHtmlFile = (htmlContent: string, filename: string) => {
+      if (htmlContent) {
+          const blob = new Blob([htmlContent], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+      }
+  }
+
   const handleExport = () => {
     startTransition(async () => {
         const htmlContent = await exportBookmarksAction();
         if (htmlContent) {
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'pocketmarks_export.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            downloadHtmlFile(htmlContent, 'pocketmarks_export.html');
             toast({title: "Export Successful", description: "Your bookmarks have been downloaded."});
         } else {
             toast({variant: "destructive", title: "Export Failed", description: "Could not generate export file."});
         }
+    });
+  };
+
+  const handleExportSelected = () => {
+    startTransition(async () => {
+        const htmlContent = await exportSelectedBookmarksAction(Array.from(selectedIds));
+        if (htmlContent) {
+            downloadHtmlFile(htmlContent, 'pocketmarks_selected_export.html');
+            toast({title: "Export Successful", description: `${selectedIds.size} items have been downloaded.`});
+        } else {
+            toast({variant: "destructive", title: "Export Failed", description: "Could not generate export file."});
+        }
+    });
+  };
+
+  const getDescendantIds = (item: BookmarkItem): string[] => {
+    if (item.type === 'bookmark') {
+        return [item.id];
+    }
+    return [item.id, ...item.children.flatMap(getDescendantIds)];
+  };
+
+  const handleSelectionChange = (itemId: string, checked: boolean) => {
+    setSelectedIds(prev => {
+        const newSet = new Set(prev);
+        if (checked) {
+            newSet.add(itemId);
+        } else {
+            newSet.delete(itemId);
+        }
+        return newSet;
+    });
+  };
+
+  const handleFolderSelectionChange = (folder: Folder, checked: boolean) => {
+    setSelectedIds(prev => {
+        const newSet = new Set(prev);
+        const allIds = getDescendantIds(folder);
+        if (checked) {
+            allIds.forEach(id => newSet.add(id));
+        } else {
+            allIds.forEach(id => newSet.delete(id));
+        }
+        return newSet;
     });
   };
 
@@ -236,7 +288,13 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 <Card>
                   <AccordionTrigger className="p-4 font-headline text-lg hover:no-underline">
                     <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                         <Checkbox
+                            id={`select-folder-${folder.id}`}
+                            checked={getDescendantIds(folder).every(id => selectedIds.has(id))}
+                            onCheckedChange={(checked) => handleFolderSelectionChange(folder, !!checked)}
+                            onClick={(e) => e.preventDefault()}
+                         />
                         <FolderIcon className="h-5 w-5 text-primary" />
                         {folder.title}
                       </div>
@@ -269,10 +327,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-4 pt-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {folder.children.map(item => (
                             <Fragment key={item.id}>
-                                {item.type === 'bookmark' && <BookmarkCard bookmark={item} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} />}
+                                {item.type === 'bookmark' && <BookmarkCard bookmark={item} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} isSelected={selectedIds.has(item.id)} onSelectionChange={handleSelectionChange} />}
                             </Fragment>
                         ))}
                     </div>
@@ -282,9 +340,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             ))}
           </Accordion>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {bookmarks.map((bookmark) => (
-                  <BookmarkCard key={bookmark.id} bookmark={bookmark} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} />
+                  <BookmarkCard key={bookmark.id} bookmark={bookmark} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} isSelected={selectedIds.has(bookmark.id)} onSelectionChange={handleSelectionChange} />
               ))}
           </div>
         </div>
@@ -297,7 +355,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-grow">
           <Input
-            placeholder="Search bookmarks, folders, or tags..."
+            placeholder="Search bookmarks, folders..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -329,7 +387,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" className="font-headline hidden md:inline-flex" onClick={handleExport} disabled={isPending}>Export</Button>
+            <Button variant="outline" className="font-headline hidden md:inline-flex" onClick={handleExport} disabled={isPending}>Export All</Button>
+            <Button variant="outline" className="font-headline hidden md:inline-flex" onClick={handleExportSelected} disabled={isPending || selectedIds.size === 0}>Export Selected</Button>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
         </div>
       </div>

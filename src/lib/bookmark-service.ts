@@ -156,9 +156,7 @@ function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
     return html;
 }
 
-export async function exportBookmarks(): Promise<string> {
-    const bookmarks = await getBookmarks();
-    const header = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+const exportFileHeader = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <!-- This is an automatically generated file.
      It will be read and overwritten.
      DO NOT EDIT! -->
@@ -166,5 +164,33 @@ export async function exportBookmarks(): Promise<string> {
 <TITLE>Bookmarks</TITLE>
 <H1>Bookmarks</H1>\n`;
 
-    return header + bookmarksToHtml(bookmarks);
+export async function exportBookmarks(): Promise<string> {
+    const bookmarks = await getBookmarks();
+    return exportFileHeader + bookmarksToHtml(bookmarks);
+}
+
+function filterForExport(items: BookmarkItem[], selectedIds: Set<string>): BookmarkItem[] {
+    return items.reduce((acc, item) => {
+        if (item.type === 'bookmark') {
+            if (selectedIds.has(item.id)) {
+                acc.push(item);
+            }
+        } else if (item.type === 'folder') {
+            const filteredChildren = filterForExport(item.children, selectedIds);
+            if (selectedIds.has(item.id) || filteredChildren.length > 0) {
+                acc.push({ ...item, children: filteredChildren });
+            }
+        }
+        return acc;
+    }, [] as BookmarkItem[]);
+}
+
+export async function exportSelectedBookmarks(ids: string[]): Promise<string> {
+    if (ids.length === 0) {
+        return "";
+    }
+    const bookmarks = await getBookmarks();
+    const selectedIds = new Set(ids);
+    const itemsToExport = filterForExport(bookmarks, selectedIds);
+    return exportFileHeader + bookmarksToHtml(itemsToExport);
 }
