@@ -32,7 +32,27 @@ async function writeBookmarksFile(bookmarks: BookmarkItem[]): Promise<void> {
 }
 
 export async function getBookmarks(): Promise<BookmarkItem[]> {
-  return await readBookmarksFile();
+  const bookmarks = await readBookmarksFile();
+  // Migration step for items without createdAt
+  let needsWrite = false;
+  const addTimestamp = (items: BookmarkItem[]) => {
+    items.forEach(item => {
+      if (!item.createdAt) {
+        // For old items, we use a default early date or a date from their ID if possible.
+        // For simplicity, we'll use a default old date.
+        item.createdAt = new Date(0).toISOString();
+        needsWrite = true;
+      }
+      if (item.type === 'folder') {
+        addTimestamp(item.children);
+      }
+    });
+  };
+  addTimestamp(bookmarks);
+  if (needsWrite) {
+    await writeBookmarksFile(bookmarks);
+  }
+  return bookmarks;
 }
 
 function findAndMutate(items: BookmarkItem[], predicate: (item: BookmarkItem) => boolean, mutator: (items: BookmarkItem[], index: number) => void): boolean {
@@ -53,15 +73,20 @@ function findAndMutate(items: BookmarkItem[], predicate: (item: BookmarkItem) =>
 export async function saveItem(itemToSave: BookmarkItem, parentId: string | null): Promise<void> {
   const bookmarks = await readBookmarksFile();
 
-  const isUpdate = findAndMutate(bookmarks, (item) => item.id === itemToSave.id, (items, index) => {
+  let itemWasUpdated = false;
+  findAndMutate(bookmarks, (item) => item.id === itemToSave.id, (items, index) => {
     const currentItem = items[index];
     if (currentItem.type === 'folder' && itemToSave.type === 'folder') {
-        itemToSave.children = currentItem.children;
+      (itemToSave as Folder).children = currentItem.children;
     }
+    // `createdAt` is guaranteed by the migration in `getBookmarks`
+    itemToSave.createdAt = currentItem.createdAt; 
     items[index] = itemToSave;
+    itemWasUpdated = true;
   });
 
-  if (!isUpdate) {
+  if (!itemWasUpdated) {
+    itemToSave.createdAt = new Date().toISOString();
     if (parentId) {
       findAndMutate(bookmarks, (item) => item.id === parentId && item.type === 'folder', (items, index) => {
         (items[index] as Folder).children.push(itemToSave);
@@ -73,7 +98,6 @@ export async function saveItem(itemToSave: BookmarkItem, parentId: string | null
 
   await writeBookmarksFile(bookmarks);
 }
-
 
 function deleteItemRecursive(items: BookmarkItem[], idToDelete: string): BookmarkItem[] {
     const filteredItems = items.filter(item => item.id !== idToDelete);
@@ -146,11 +170,12 @@ function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
     let html = `${indent}<DL><p>\n`;
 
     items.forEach(item => {
+        const addDate = Math.floor(new Date(item.createdAt).getTime() / 1000);
         if (item.type === 'folder') {
-            html += `${indent}    <DT><H3>${item.title}</H3>\n`;
+            html += `${indent}    <DT><H3 ADD_DATE="${addDate}">${item.title}</H3>\n`;
             html += bookmarksToHtml(item.children, indentLevel + 1);
         } else if (item.type === 'bookmark') {
-            html += `${indent}    <DT><A HREF="${item.url}">${item.title}</A>\n`;
+            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}">${item.title}</A>\n`;
         }
     });
 
@@ -243,7 +268,11 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
               linkStatuses[item.id] = `Error (${response.status})`;
             }
           } catch (error) {
-            linkStatuses[item.id] = 'Dead';
+            if (error instanceof Error && error.name === 'AbortError') {
+              linkStatuses[item.id] = 'Timeout';
+            } else {
+              linkStatuses[item.id] = 'Dead';
+            }
           }
         })());
       } else if (item.type === 'folder') {

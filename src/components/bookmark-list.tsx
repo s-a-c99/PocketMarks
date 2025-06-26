@@ -36,6 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 
 function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
@@ -90,6 +91,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [linkStatuses, setLinkStatuses] = useState<Record<string, string>>({});
 
+  // State for sorting
+  const [sortOrder, setSortOrder] = useState("date-desc");
+
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
     setDialogParentId(null);
@@ -97,7 +101,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
 
   const handleAddNewFolder = () => {
-    const folderScaffold = { id: '', type: 'folder' as const, title: '' };
+    const folderScaffold = { id: '', type: 'folder' as const, title: '', createdAt: new Date().toISOString() };
     setItemToEdit(folderScaffold);
     setDialogParentId(null);
     setIsDialogOpen(true);
@@ -129,12 +133,13 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     });
   };
 
-  const handleSaveItem = (values: Omit<BookmarkItem, 'id' | 'children'>, parentId: string | null) => {
+  const handleSaveItem = (values: Omit<BookmarkItem, 'id' | 'children' | 'createdAt'>, parentId: string | null) => {
     const isEditing = !!itemToEdit && !!itemToEdit.id;
     
     const itemToSave = {
         id: isEditing ? itemToEdit.id : uuidv4(),
         ...values,
+        createdAt: isEditing ? itemToEdit.createdAt : new Date().toISOString(),
     };
 
     if (itemToSave.type === 'folder' && !isEditing) {
@@ -181,6 +186,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                         type: 'bookmark',
                         title: anchor.textContent || '',
                         url: anchor.getAttribute('href') || '',
+                        createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000).toISOString()
                     });
                 } else if (header) {
                     const nextDl = (node as HTMLElement).nextElementSibling;
@@ -188,7 +194,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                         id: uuidv4(),
                         type: 'folder',
                         title: header.textContent || '',
-                        children: nextDl && nextDl.nodeName === 'DL' ? parseNodes(nextDl.childNodes) : []
+                        children: nextDl && nextDl.nodeName === 'DL' ? parseNodes(nextDl.childNodes) : [],
+                        createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
                     });
                 }
             } else if (node.nodeName === 'DL' || node.nodeName === 'P') {
@@ -310,7 +317,38 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     });
   };
 
-  const filteredItems = useMemo(() => filterItems(initialItems, searchTerm), [initialItems, searchTerm]);
+  const sortedItems = useMemo(() => {
+    const itemsToSort = JSON.parse(JSON.stringify(initialItems)); // Deep copy to avoid mutating original
+
+    const sortFn = (a: BookmarkItem, b: BookmarkItem) => {
+      switch (sortOrder) {
+        case 'date-asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'date-desc':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'alpha-asc':
+          return a.title.localeCompare(b.title);
+        case 'alpha-desc':
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    };
+    
+    const recursiveSort = (items: BookmarkItem[]) => {
+      items.sort(sortFn);
+      items.forEach(item => {
+        if (item.type === 'folder') {
+          recursiveSort(item.children);
+        }
+      });
+      return items;
+    }
+
+    return recursiveSort(itemsToSort);
+  }, [initialItems, sortOrder]);
+
+  const filteredItems = useMemo(() => filterItems(sortedItems, searchTerm), [sortedItems, searchTerm]);
 
   const renderItems = (items: BookmarkItem[], parentId: string | null = null) => {
     const folders = items.filter(item => item.type === 'folder') as Folder[];
@@ -364,7 +402,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-4 pt-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                         {folder.children.map(item => (
                             <Fragment key={item.id}>
                                 {item.type === 'bookmark' && <BookmarkCard bookmark={item} status={linkStatuses[item.id]} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} isSelected={selectedIds.has(item.id)} onSelectionChange={handleSelectionChange} />}
@@ -377,7 +415,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             ))}
           </Accordion>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {bookmarks.map((bookmark) => (
                   <BookmarkCard key={bookmark.id} bookmark={bookmark} status={linkStatuses[bookmark.id]} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} isSelected={selectedIds.has(bookmark.id)} onSelectionChange={handleSelectionChange} />
               ))}
@@ -389,18 +427,35 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   return (
     <div className="w-full">
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-grow">
-          <Input
-            placeholder="Search bookmarks, folders..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-            disabled={isPending || isCheckingLinks}
-          />
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <div className="flex flex-col md:flex-row gap-4 mb-8 flex-wrap">
+        <div className="flex-grow flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Input
+                placeholder="Search bookmarks, folders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+                disabled={isPending || isCheckingLinks}
+              />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-sm text-muted-foreground">Sort:</span>
+              <Select value={sortOrder} onValueChange={setSortOrder}>
+                  <SelectTrigger className="w-full sm:w-[180px] h-10">
+                      <SelectValue placeholder="Sort order" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                      <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                      <SelectItem value="alpha-asc">Title (A-Z)</SelectItem>
+                      <SelectItem value="alpha-desc">Title (Z-A)</SelectItem>
+                  </SelectContent>
+              </Select>
+            </div>
         </div>
-        <div className="flex gap-4 flex-wrap">
+
+        <div className="flex gap-2 flex-wrap">
             <Button onClick={handleAddNewBookmark} className="font-headline" disabled={isPending || isCheckingLinks}>
                 <Plus className="mr-2 h-4 w-4" /> Bookmark
             </Button>

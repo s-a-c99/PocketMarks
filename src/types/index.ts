@@ -3,6 +3,7 @@ export type Bookmark = {
   type: 'bookmark';
   title: string;
   url: string;
+  createdAt: string;
 };
 
 export type Folder = {
@@ -10,6 +11,7 @@ export type Folder = {
   type: 'folder';
   title: string;
   children: BookmarkItem[];
+  createdAt: string;
 };
 
 export type BookmarkItem = Bookmark | Folder;

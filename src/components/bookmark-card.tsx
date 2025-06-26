@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Bookmark } from "@/types";
+import { cn } from "@/lib/utils";
 
 type BookmarkCardProps = {
   bookmark: Bookmark;
@@ -27,7 +28,10 @@ export function BookmarkCard({ bookmark, status, onEdit, onDelete, isSelected, o
 
   return (
     <TooltipProvider delayDuration={300}>
-      <Card className="transition-all hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between">
+      <Card className={cn(
+        "transition-all hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between",
+        !isOk && "border-destructive ring-2 ring-destructive/50 shadow-lg shadow-destructive/20"
+      )}>
         <CardHeader className="p-2 space-y-1">
           <div className="flex justify-between items-start gap-2">
             <div className="flex-1 min-w-0 flex items-center gap-2">
