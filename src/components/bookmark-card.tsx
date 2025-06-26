@@ -15,20 +15,20 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
   const { id, title, url } = bookmark;
 
   return (
-    <Card className="flex flex-col h-full transition-all hover:shadow-md hover:-translate-y-1">
-      <CardHeader className="flex-grow">
-        <div className="flex justify-between items-start mb-2">
-            <CardTitle className="font-headline text-xl font-semibold">{title}</CardTitle>
-            <div className="flex items-center gap-1.5 shrink-0">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(bookmark)}>
-                    <Pencil className="h-4 w-4" />
+    <Card className="flex flex-col h-full transition-all hover:shadow-lg hover:-translate-y-0.5">
+      <CardHeader className="flex-grow p-4">
+        <div className="flex justify-between items-start mb-1">
+            <CardTitle className="font-headline text-base font-semibold leading-tight truncate pr-2">{title}</CardTitle>
+            <div className="flex items-center gap-1 shrink-0">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(bookmark)}>
+                    <Pencil className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/80 hover:text-destructive" onClick={() => onDelete(id)}>
-                    <Trash2 className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/80 hover:text-destructive" onClick={() => onDelete(id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
                 </Button>
             </div>
         </div>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-2 break-all">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1.5 break-all truncate">
             <span>{url}</span>
             <ExternalLink className="h-3 w-3 opacity-70 shrink-0" />
         </a>
