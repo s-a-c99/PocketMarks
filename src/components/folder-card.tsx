@@ -1,6 +1,6 @@
 "use client";
 
-import { Folder as FolderIcon, Pencil, Trash2, FolderPlus } from "lucide-react";
+import { Folder as FolderIcon, Pencil, Trash2 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,13 +11,12 @@ type FolderCardProps = {
   folder: Folder;
   onEdit: (folder: Folder) => void;
   onDelete: (id: string) => void;
-  onAddInFolder: (id: string) => void;
   onNavigate: (id: string) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, checked: boolean) => void;
 };
 
-export function FolderCard({ folder, onEdit, onDelete, onAddInFolder, onNavigate, isSelected, onSelectionChange }: FolderCardProps) {
+export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange }: FolderCardProps) {
   const { id, title } = folder;
 
   return (
@@ -50,14 +49,6 @@ export function FolderCard({ folder, onEdit, onDelete, onAddInFolder, onNavigate
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-               <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onAddInFolder(id); }}>
-                        <FolderPlus className="h-3 w-3" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Add item in this folder</p></TooltipContent>
-               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onEdit(folder); }}>

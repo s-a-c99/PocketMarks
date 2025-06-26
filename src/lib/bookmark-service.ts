@@ -120,10 +120,24 @@ export async function overwriteBookmarks(items: BookmarkItem[]): Promise<void> {
     await writeBookmarksFile(items);
 }
 
+function normalizeUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    // Remove protocol, www, and trailing slash
+    let hostname = urlObj.hostname.replace(/^www\./, '');
+    let path = urlObj.pathname.replace(/\/$/, '');
+    return hostname + path + urlObj.search + urlObj.hash;
+  } catch (e) {
+    // If URL is invalid, return a simplified version
+    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+  }
+}
+
+
 function getAllUrls(items: BookmarkItem[], urlMap: Map<string, boolean> = new Map()): Map<string, boolean> {
     for (const item of items) {
         if (item.type === 'bookmark') {
-            urlMap.set(item.url, true);
+            urlMap.set(normalizeUrl(item.url), true);
         } else if (item.type === 'folder') {
             getAllUrls(item.children, urlMap);
         }
@@ -131,23 +145,27 @@ function getAllUrls(items: BookmarkItem[], urlMap: Map<string, boolean> = new Ma
     return urlMap;
 }
 
-function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[]) {
-    const existingUrls = getAllUrls(existingItems);
+function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[], existingUrls: Map<string, boolean>) {
     newItems.forEach(newItem => {
         if (newItem.type === 'bookmark') {
-            if (!existingUrls.has(newItem.url)) {
+            const normalized = normalizeUrl(newItem.url);
+            if (!existingUrls.has(normalized)) {
                 existingItems.push(newItem);
-                existingUrls.set(newItem.url, true);
+                existingUrls.set(normalized, true);
             }
         } else if (newItem.type === 'folder') {
+            // Find an existing folder with the same title to merge into
             const existingFolder = existingItems.find(
                 (item): item is Folder => item.type === 'folder' && item.title === newItem.title
             );
 
             if (existingFolder) {
-                mergeItems(existingFolder.children, newItem.children);
+                // If folder exists, recurse into it
+                mergeItems(existingFolder.children, newItem.children, existingUrls);
             } else {
+                // If folder doesn't exist, add it wholesale
                 existingItems.push(newItem);
+                // Also add the new folder's urls to the map so we don't add them twice if they appear again in the file
                 getAllUrls(newItem.children, existingUrls);
             }
         }
@@ -156,7 +174,8 @@ function mergeItems(existingItems: BookmarkItem[], newItems: BookmarkItem[]) {
 
 export async function mergeBookmarks(items: BookmarkItem[]): Promise<void> {
     const existingBookmarks = await readBookmarksFile();
-    mergeItems(existingBookmarks, items);
+    const existingUrls = getAllUrls(existingBookmarks);
+    mergeItems(existingBookmarks, items, existingUrls);
     await writeBookmarksFile(existingBookmarks);
 }
 
@@ -168,13 +187,17 @@ export async function compareBookmarks(newItems: BookmarkItem[]): Promise<Bookma
         const result: BookmarkItem[] = [];
         for (const item of items) {
             if (item.type === 'bookmark') {
-                if (!existingUrls.has(item.url)) {
+                if (!existingUrls.has(normalizeUrl(item.url))) {
                     result.push(item);
                 }
             } else if (item.type === 'folder') {
                 const newChildren = filterNew(item.children);
+                // If the folder itself is new, or it contains new children, include it.
+                // We check if folder with same name exists at the root. A more robust check might be needed.
+                const folderExists = existingBookmarks.some(b => b.type === 'folder' && b.title === item.title);
+
                 if (newChildren.length > 0) {
-                    result.push({ ...item, children: newChildren });
+                     result.push({ ...item, children: newChildren });
                 }
             }
         }
@@ -257,7 +280,7 @@ export async function createBackup(): Promise<void> {
   const currentBookmarks = await readBookmarksFile();
   if (currentBookmarks.length === 0) return;
   const timestamp = format(new Date(), "yyyy-MM-dd'T'HH-mm-ss");
-  const backupFilePath = path.join(backupsDir, `bookmarks-${timestamp}.json`);
+  const backupFilePath = path.join(backupsDir, `backups/bookmarks-${timestamp}.json`);
   await fs.writeFile(backupFilePath, JSON.stringify(currentBookmarks, null, 2), 'utf-8');
 }
 

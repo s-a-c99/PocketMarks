@@ -47,34 +47,27 @@ function findItem(items: BookmarkItem[], itemId: string): BookmarkItem | undefin
     return undefined;
 }
 
-function findPath(items: BookmarkItem[], itemId: string): Folder[] | null {
-    if (!itemId) return null;
-
+function findPath(items: BookmarkItem[], itemId: string): Folder[] {
     const find = (
         currentItems: BookmarkItem[],
         idToFind: string,
         currentPath: Folder[]
     ): Folder[] | null => {
         for (const item of currentItems) {
-            const newPath = item.type === 'folder' ? [...currentPath, item] : currentPath;
-
             if (item.id === idToFind) {
-                // If we found the item, and it's a folder, the path includes the item itself.
-                if (item.type === 'folder') {
-                    return newPath;
-                }
-                // If it's a bookmark, the path is just up to its parent.
-                return currentPath;
+                // If it's a folder, path includes the item. If bookmark, it's just the parents.
+                return item.type === 'folder' ? [...currentPath, item] : currentPath;
             }
 
             if (item.type === 'folder') {
+                const newPath = [...currentPath, item];
                 const result = find(item.children, idToFind, newPath);
                 if (result) return result;
             }
         }
         return null;
     };
-    return find(items, itemId, []);
+    return find(items, itemId, []) || [];
 }
 
 function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
@@ -197,45 +190,54 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         const parser = new DOMParser();
         const doc = parser.parseFromString(content, "text/html");
 
-        // Robust recursive parser for Netscape Bookmark File Format
-        const parseHtmlBookmarks = (dlElement: HTMLDListElement | null): BookmarkItem[] => {
-            if (!dlElement) return [];
+        // Industrial-strength parser for Netscape Bookmark File Format
+        const parseDl = (dlElement: HTMLDListElement): BookmarkItem[] => {
             const items: BookmarkItem[] = [];
+            const childElements = Array.from(dlElement.children);
             
-            // In the bookmark format, content is within DTs which are direct children of a DL.
-            const directChildren = Array.from(dlElement.children);
+            for (let i = 0; i < childElements.length; i++) {
+                const child = childElements[i];
 
-            for (const child of directChildren) {
-                // We are interested in DT elements. Skip P tags often used for spacing.
-                if (child.tagName !== 'DT') continue;
+                if (child.tagName !== 'DT') {
+                    continue;
+                }
 
-                const anchor = child.querySelector(':scope > A');
-                const header = child.querySelector(':scope > H3');
-
-                if (anchor) {
-                    items.push({
-                        id: uuidv4(),
-                        type: 'bookmark',
-                        title: anchor.textContent || '',
-                        url: anchor.getAttribute('href') || '',
-                        createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000).toISOString()
-                    });
-                } else if (header) {
-                    // A folder's content is in the next sibling DL element.
-                    const nextDl = child.nextElementSibling;
+                // Check direct children for H3 or A tags
+                const header = child.querySelector(':scope > h3, :scope > H3');
+                const anchor = child.querySelector(':scope > a, :scope > A');
+                
+                if (header) {
+                    const nextElement = childElements[i + 1];
+                    let children: BookmarkItem[] = [];
+                    // The folder's content is in the very next DL element
+                    if (nextElement && nextElement.tagName === 'DL') {
+                        children = parseDl(nextElement as HTMLDListElement);
+                        i++; // We've processed the DL, so skip it in the next iteration
+                    }
+                    
                     items.push({
                         id: uuidv4(),
                         type: 'folder',
-                        title: header.textContent || '',
-                        children: (nextDl && nextDl.tagName === 'DL') ? parseHtmlBookmarks(nextDl as HTMLDListElement) : [],
-                        createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
+                        title: header.textContent || 'Untitled Folder',
+                        children: children,
+                        createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000 || Date.now()).toISOString()
+                    });
+                } else if (anchor) {
+                    items.push({
+                        id: uuidv4(),
+                        type: 'bookmark',
+                        title: anchor.textContent || 'Untitled Bookmark',
+                        url: anchor.getAttribute('href') || '',
+                        createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000 || Date.now()).toISOString()
                     });
                 }
             }
             return items;
         };
-
-        const importedItems = parseHtmlBookmarks(doc.body.querySelector('DL'));
+        
+        // Find all top-level DLs in the body and parse them.
+        const rootDLs = doc.body.querySelectorAll(':scope > dl, :scope > DL');
+        const importedItems = Array.from(rootDLs).flatMap(dl => parseDl(dl as HTMLDListElement));
 
         if (mode === 'replace') {
             setPendingImportData(importedItems);
@@ -361,8 +363,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   
  const breadcrumbs = useMemo(() => {
     if (!currentFolderId) return [];
-    // findPath returns the path *to* the folder, which is what we need.
-    return findPath(initialItems, currentFolderId) || [];
+    return findPath(initialItems, currentFolderId);
   }, [currentFolderId, initialItems]);
 
 
@@ -450,7 +451,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         </div>
       </div>
       
-      <BreadcrumbNav path={breadcrumbs} onNavigate={handleNavigate} currentFolderId={currentFolderId} />
+      <BreadcrumbNav path={breadcrumbs} onNavigate={handleNavigate} />
       
       {filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 mt-4">
@@ -461,10 +462,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 folder={item} 
                 onEdit={handleEdit} 
                 onDelete={() => handleDelete(item)} 
-                onAddInFolder={() => {
-                  handleNavigate(item.id);
-                  handleAddNewBookmark();
-                }}
                 onNavigate={() => handleNavigate(item.id)}
                 isSelected={selectedIds.has(item.id)}
                 onSelectionChange={handleSelectionChange}
