@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { saveBookmark, deleteBookmark } from './bookmark-service';
+import { saveItem, deleteItem, overwriteBookmarks, exportBookmarks } from './bookmark-service';
 import type { BookmarkItem } from '@/types';
 
 const SESSION_COOKIE_NAME = 'pocketmarks_session';
@@ -15,7 +15,7 @@ export async function login(prevState: { error: string } | undefined, formData: 
   // For now, we use environment variables for a single user.
   // In a multi-user system, you would look up the user in a database.
   const validUsername = process.env.POCKETMARKS_USERNAME || "user";
-  const validPassword = process.env.POCKETMARKS_PASSWORD || "password";
+  const validPassword = process.env.POCKETMARKS_PASSWORD || "test1";
 
   if (
     username &&
@@ -40,13 +40,22 @@ export async function logout() {
   redirect('/login');
 }
 
-// Bookmark actions
-export async function saveBookmarkAction(item: BookmarkItem) {
-  await saveBookmark(item);
+// Item actions
+export async function saveItemAction(item: BookmarkItem, parentId: string | null) {
+  await saveItem(item, parentId);
   revalidatePath('/bookmarks');
 }
 
-export async function deleteBookmarkAction(id: string) {
-  await deleteBookmark(id);
+export async function deleteItemAction(id: string) {
+  await deleteItem(id);
   revalidatePath('/bookmarks');
+}
+
+export async function importBookmarksAction(items: BookmarkItem[]) {
+  await overwriteBookmarks(items);
+  revalidatePath('/bookmarks');
+}
+
+export async function exportBookmarksAction(): Promise<string> {
+    return await exportBookmarks();
 }

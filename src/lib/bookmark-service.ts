@@ -2,23 +2,22 @@
 import 'server-only';
 import fs from 'fs/promises';
 import path from 'path';
-import type { BookmarkItem } from '@/types';
+import type { BookmarkItem, Folder } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 const bookmarksFilePath = path.join(process.cwd(), 'bookmarks.json');
 
 async function readBookmarksFile(): Promise<BookmarkItem[]> {
   try {
     const data = await fs.readFile(bookmarksFilePath, 'utf-8');
-    // Basic validation to ensure it's an array
     const parsedData = JSON.parse(data);
     if (Array.isArray(parsedData)) {
       return parsedData as BookmarkItem[];
     }
     return [];
   } catch (error) {
-    // If the file doesn't exist or is invalid, return an empty array.
     if ((error as NodeJS.ErrnoException).code === 'ENOENT' || error instanceof SyntaxError) {
-      await writeBookmarksFile([]); // Create an empty file if it doesn't exist
+      await writeBookmarksFile([]);
       return [];
     }
     throw error;
@@ -34,36 +33,46 @@ export async function getBookmarks(): Promise<BookmarkItem[]> {
   return await readBookmarksFile();
 }
 
-// A recursive function to find and update a bookmark or folder
-function updateItemRecursive(items: BookmarkItem[], itemToSave: BookmarkItem): boolean {
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].id === itemToSave.id) {
-      items[i] = itemToSave;
-      return true;
+function findAndMutate(items: BookmarkItem[], predicate: (item: BookmarkItem) => boolean, mutator: (items: BookmarkItem[], index: number) => void): boolean {
+    for (let i = 0; i < items.length; i++) {
+        if (predicate(items[i])) {
+            mutator(items, i);
+            return true;
+        }
+        if (items[i].type === 'folder') {
+            if (findAndMutate((items[i] as Folder).children, predicate, mutator)) {
+                return true;
+            }
+        }
     }
-    if (items[i].type === 'folder') {
-      if (updateItemRecursive((items[i] as any).children, itemToSave)) {
-        return true;
-      }
-    }
-  }
-  return false;
+    return false;
 }
 
-
-export async function saveBookmark(bookmark: BookmarkItem): Promise<void> {
+export async function saveItem(itemToSave: BookmarkItem, parentId: string | null): Promise<void> {
   const bookmarks = await readBookmarksFile();
-  
-  if (!updateItemRecursive(bookmarks, bookmark)) {
-    // If it's a new item, add it to the root
-    bookmarks.push(bookmark);
+
+  const isUpdate = findAndMutate(bookmarks, (item) => item.id === itemToSave.id, (items, index) => {
+    const currentItem = items[index];
+    if (currentItem.type === 'folder' && itemToSave.type === 'folder') {
+        itemToSave.children = currentItem.children;
+    }
+    items[index] = itemToSave;
+  });
+
+  if (!isUpdate) {
+    if (parentId) {
+      findAndMutate(bookmarks, (item) => item.id === parentId && item.type === 'folder', (items, index) => {
+        (items[index] as Folder).children.push(itemToSave);
+      });
+    } else {
+      bookmarks.push(itemToSave);
+    }
   }
 
   await writeBookmarksFile(bookmarks);
 }
 
 
-// A recursive function to find and delete an item by ID
 function deleteItemRecursive(items: BookmarkItem[], idToDelete: string): BookmarkItem[] {
     const filteredItems = items.filter(item => item.id !== idToDelete);
     return filteredItems.map(item => {
@@ -77,8 +86,42 @@ function deleteItemRecursive(items: BookmarkItem[], idToDelete: string): Bookmar
     });
 }
 
-export async function deleteBookmark(id: string): Promise<void> {
+export async function deleteItem(id: string): Promise<void> {
   let bookmarks = await readBookmarksFile();
   bookmarks = deleteItemRecursive(bookmarks, id);
   await writeBookmarksFile(bookmarks);
+}
+
+export async function overwriteBookmarks(items: BookmarkItem[]): Promise<void> {
+    await writeBookmarksFile(items);
+}
+
+function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
+    const indent = '    '.repeat(indentLevel);
+    let html = `${indent}<DL><p>\n`;
+
+    items.forEach(item => {
+        if (item.type === 'folder') {
+            html += `${indent}    <DT><H3>${item.title}</H3>\n`;
+            html += bookmarksToHtml(item.children, indentLevel + 1);
+        } else {
+            html += `${indent}    <DT><A HREF="${item.url}">${item.title}</A>\n`;
+        }
+    });
+
+    html += `${indent}</DL><p>\n`;
+    return html;
+}
+
+export async function exportBookmarks(): Promise<string> {
+    const bookmarks = await getBookmarks();
+    const header = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!-- This is an automatically generated file.
+     It will be read and overwritten.
+     DO NOT EDIT! -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Bookmarks</TITLE>
+<H1>Bookmarks</H1>\n`;
+
+    return header + bookmarksToHtml(bookmarks);
 }
