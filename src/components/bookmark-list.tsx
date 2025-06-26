@@ -90,7 +90,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
     return (
       <>
-        <Accordion type="multiple" className="w-full space-y-4">
+        <Accordion type="multiple" className="w-full space-y-4" defaultValue={folders.map(f => f.id)}>
           {folders.map(folder => (
             <AccordionItem key={folder.id} value={folder.id} className="border-none">
               <Card>
@@ -101,7 +101,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-4 pt-0">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                       {folder.children.map(item => (
                           <Fragment key={item.id}>
                               {item.type === 'bookmark' && <BookmarkCard bookmark={item} onEdit={handleEdit} onDelete={handleDelete} />}
@@ -115,7 +115,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
           ))}
         </Accordion>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-9 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mt-4">
             {bookmarks.map((bookmark) => (
                 <BookmarkCard key={bookmark.id} bookmark={bookmark} onEdit={handleEdit} onDelete={handleDelete} />
             ))}
