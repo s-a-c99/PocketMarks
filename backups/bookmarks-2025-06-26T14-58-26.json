@@ -1,48 +1,48 @@
 [
   {
-    "id": "3cde1ea0-4dcd-4221-b239-08310d97052b",
+    "id": "c3206735-b7fc-424a-8c8f-37e6391e073c",
     "type": "folder",
     "title": "Bookmarks bar",
     "children": [],
-    "createdAt": "2025-06-26T09:46:33.000Z"
+    "createdAt": "2025-05-17T21:53:25.000Z"
   },
   {
-    "id": "590736ad-4503-4d35-9533-8d5be72df43c",
+    "id": "d53a7002-d3bd-49da-8f32-b4a7a2d1df00",
     "type": "folder",
     "title": "Pinboard",
     "children": [],
     "createdAt": "2025-05-17T21:53:25.000Z"
   },
   {
-    "id": "e2625a4c-fd22-43d6-833d-22501f8b4d45",
+    "id": "d1dc2f08-300b-47a8-ace0-49f9e0be0ee5",
     "type": "folder",
     "title": "sac99-r41d3r",
     "children": [],
     "createdAt": "2025-05-17T21:53:25.000Z"
   },
   {
-    "id": "b49cbb2e-21c8-437d-8303-41317d20330a",
+    "id": "07c43088-e0c1-46cc-a5a1-7e37c1d0238c",
     "type": "folder",
     "title": "Trash",
     "children": [],
-    "createdAt": "2025-06-26T09:26:26.000Z"
+    "createdAt": "2025-05-17T21:53:25.000Z"
   },
   {
-    "id": "2954bc64-fafb-4ccc-bd14-2415ed4e2966",
+    "id": "d29ed124-f058-4217-861f-5cb34b684cf5",
     "type": "folder",
     "title": "Unsorted bookmarks",
     "children": [],
     "createdAt": "2025-05-17T21:53:25.000Z"
   },
   {
-    "id": "4023dd56-0d4f-45f0-9d7a-7518665e63a5",
+    "id": "7884b5bd-f2b6-465c-bd79-bc5e2b5400ca",
     "type": "folder",
     "title": "Unsynchronized Pinboard",
     "children": [],
     "createdAt": "2025-05-17T21:53:25.000Z"
   },
   {
-    "id": "55f6ab42-6c1f-42c7-8049-721a5e7830c0",
+    "id": "177341d4-b0a5-4336-b5a3-c4fba8142a53",
     "type": "folder",
     "title": "Other bookmarks",
     "children": [],

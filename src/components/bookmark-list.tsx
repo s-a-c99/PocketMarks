@@ -191,25 +191,28 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         const parser = new DOMParser();
         const doc = parser.parseFromString(content, "text/html");
 
-        // New robust recursive parser
+        // Rebuilt, robust recursive parser
         const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
             const items: BookmarkItem[] = [];
-            if (!root || !root.children) {
-                return items;
-            }
+            if (!root) return items;
+
             const children = Array.from(root.children);
 
-            for (let i = 0; i < children.length; i++) {
-                const node = children[i];
-                // We only care about <DT> elements
+            for (const node of children) {
                 if (node.tagName !== 'DT') {
                     continue;
                 }
 
-                const a = node.querySelector('A');
                 const h3 = node.querySelector('H3');
-                const add_date = a?.getAttribute('add_date') || h3?.getAttribute('add_date') || '0';
-                const createdAt = new Date(parseInt(add_date) * 1000 || Date.now()).toISOString();
+                const a = node.querySelector('A');
+                
+                if (!h3 && !a) {
+                    continue;
+                }
+
+                const add_date_attr = a?.getAttribute('add_date') || h3?.getAttribute('add_date');
+                const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
+                const createdAt = new Date(add_date).toISOString();
 
                 if (h3) { // It's a folder
                     const folder: Folder = {
@@ -219,23 +222,25 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                         children: [],
                         createdAt: createdAt,
                     };
-
-                    // The folder's content is in the next sibling <DL> element.
-                    const nextElement = children[i + 1];
-                    if (nextElement && nextElement.tagName === 'DL') {
-                        folder.children = parseBookmarksRecursive(nextElement);
-                        i++; // Increment i to skip this DL in the next iteration
+                    
+                    const nextDlElement = node.nextElementSibling;
+                    if (nextDlElement && nextDlElement.tagName === 'DL') {
+                        folder.children = parseBookmarksRecursive(nextDlElement);
                     }
                     items.push(folder);
 
                 } else if (a) { // It's a bookmark
-                    items.push({
-                        id: uuidv4(),
-                        type: 'bookmark',
-                        title: a.textContent || 'Untitled Bookmark',
-                        url: a.getAttribute('href') || '',
-                        createdAt: createdAt,
-                    });
+                    const url = a.getAttribute('href');
+                    const title = a.textContent || 'Untitled Bookmark';
+                    if (url) {
+                        items.push({
+                            id: uuidv4(),
+                            type: 'bookmark',
+                            title: title,
+                            url: url,
+                            createdAt: createdAt,
+                        });
+                    }
                 }
             }
             return items;
@@ -249,7 +254,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         }
 
         const importedItems = parseBookmarksRecursive(rootDL);
-
+        
         if (importedItems.length === 0) {
             toast({ variant: "destructive", title: "Import Failed", description: "No bookmarks or folders were found in the file." });
             if(event.target) event.target.value = '';
