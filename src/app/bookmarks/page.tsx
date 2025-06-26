@@ -30,7 +30,7 @@ export default async function BookmarksPage() {
         </div>
       </header>
       <div className="container mx-auto py-8">
-        <BookmarkList initialBookmarks={bookmarks} />
+        <BookmarkList initialItems={bookmarks} />
       </div>
       <AppFooter />
     </main>

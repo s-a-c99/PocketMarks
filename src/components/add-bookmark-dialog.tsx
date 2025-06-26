@@ -33,7 +33,7 @@ const formSchema = z.object({
 type AddBookmarkDialogProps = {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  onBookmarkSaved: (values: Omit<Bookmark, 'id'>) => void;
+  onBookmarkSaved: (values: Omit<Bookmark, 'id' | 'type'>) => void;
   bookmarkToEdit?: Bookmark | null;
 };
 

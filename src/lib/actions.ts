@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { saveBookmark, deleteBookmark } from './bookmark-service';
-import type { Bookmark } from '@/types';
+import type { BookmarkItem } from '@/types';
 
 const SESSION_COOKIE_NAME = 'pocketmarks_session';
 
@@ -12,11 +12,16 @@ export async function login(prevState: { error: string } | undefined, formData: 
   const username = formData.get('username');
   const password = formData.get('password');
 
+  // For now, we use environment variables for a single user.
+  // In a multi-user system, you would look up the user in a database.
+  const validUsername = process.env.POCKETMARKS_USERNAME || "user";
+  const validPassword = process.env.POCKETMARKS_PASSWORD || "password";
+
   if (
     username &&
-    username === process.env.POCKETMARKS_USERNAME &&
+    username === validUsername &&
     password &&
-    password === process.env.POCKETMARKS_PASSWORD
+    password === validPassword
   ) {
     cookies().set(SESSION_COOKIE_NAME, 'true', {
       httpOnly: true,
@@ -36,8 +41,8 @@ export async function logout() {
 }
 
 // Bookmark actions
-export async function saveBookmarkAction(bookmark: Bookmark) {
-  await saveBookmark(bookmark);
+export async function saveBookmarkAction(item: BookmarkItem) {
+  await saveBookmark(item);
   revalidatePath('/bookmarks');
 }
 
