@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2, ExternalLink } from "lucide-react";
+import { Pencil, Trash2, ExternalLink, ShieldAlert } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,14 +14,16 @@ import type { Bookmark } from "@/types";
 
 type BookmarkCardProps = {
   bookmark: Bookmark;
+  status?: string;
   onEdit: (bookmark: Bookmark) => void;
   onDelete: (id: string) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, checked: boolean) => void;
 };
 
-export function BookmarkCard({ bookmark, onEdit, onDelete, isSelected, onSelectionChange }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, status, onEdit, onDelete, isSelected, onSelectionChange }: BookmarkCardProps) {
   const { id, title, url } = bookmark;
+  const isOk = !status || status === 'ok';
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -36,6 +38,16 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, isSelected, onSelecti
                 onClick={(e) => e.stopPropagation()}
                 aria-label={`Select ${title}`}
               />
+              {!isOk && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                        <ShieldAlert className="h-4 w-4 text-destructive shrink-0" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Link status: {status}</p>
+                    </TooltipContent>
+                  </Tooltip>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <a

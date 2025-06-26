@@ -4,8 +4,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { Bookmark, BookmarkItem, Folder } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { format } from 'date-fns';
 
 const bookmarksFilePath = path.join(process.cwd(), 'bookmarks.json');
+const backupsDir = path.join(process.cwd(), 'backups');
 
 async function readBookmarksFile(): Promise<BookmarkItem[]> {
   try {
@@ -193,4 +195,64 @@ export async function exportSelectedBookmarks(ids: string[]): Promise<string> {
     const selectedIds = new Set(ids);
     const itemsToExport = filterForExport(bookmarks, selectedIds);
     return exportFileHeader + bookmarksToHtml(itemsToExport);
+}
+
+// Backup and recovery
+async function ensureBackupsDirExists(): Promise<void> {
+  try {
+    await fs.mkdir(backupsDir, { recursive: true });
+  } catch (error) {
+    console.error("Could not create backups directory", error);
+    throw error;
+  }
+}
+
+export async function createBackup(): Promise<void> {
+  await ensureBackupsDirExists();
+  const currentBookmarks = await readBookmarksFile();
+  if (currentBookmarks.length === 0) return; // Don't back up empty lists
+  
+  const timestamp = format(new Date(), "yyyy-MM-dd'T'HH-mm-ss");
+  const backupFilePath = path.join(backupsDir, `bookmarks-${timestamp}.json`);
+  await fs.writeFile(backupFilePath, JSON.stringify(currentBookmarks, null, 2), 'utf-8');
+}
+
+
+// Dead link checker
+export async function checkAllLinks(): Promise<Record<string, string>> {
+  const bookmarks = await readBookmarksFile();
+  const linkStatuses: Record<string, string> = {};
+  
+  const tasks: Promise<void>[] = [];
+
+  function traverse(items: BookmarkItem[]) {
+    for (const item of items) {
+      if (item.type === 'bookmark') {
+        tasks.push((async () => {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+            const response = await fetch(item.url, { signal: controller.signal, redirect: 'manual' });
+            clearTimeout(timeoutId);
+
+            if (response.status >= 200 && response.status < 300) {
+              linkStatuses[item.id] = 'ok';
+            } else if (response.status >= 300 && response.status < 400) {
+              linkStatuses[item.id] = `Redirect (${response.status})`;
+            } else {
+              linkStatuses[item.id] = `Error (${response.status})`;
+            }
+          } catch (error) {
+            linkStatuses[item.id] = 'Dead';
+          }
+        })());
+      } else if (item.type === 'folder') {
+        traverse(item.children);
+      }
+    }
+  }
+
+  traverse(bookmarks);
+  await Promise.all(tasks);
+  return linkStatuses;
 }

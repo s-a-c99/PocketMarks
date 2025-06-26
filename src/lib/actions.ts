@@ -3,7 +3,16 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { saveItem, deleteItem, overwriteBookmarks, exportBookmarks, exportSelectedBookmarks, mergeBookmarks } from './bookmark-service';
+import { 
+  saveItem, 
+  deleteItem, 
+  overwriteBookmarks, 
+  exportBookmarks, 
+  exportSelectedBookmarks, 
+  mergeBookmarks,
+  createBackup,
+  checkAllLinks
+} from './bookmark-service';
 import type { BookmarkItem } from '@/types';
 
 const SESSION_COOKIE_NAME = 'pocketmarks_session';
@@ -51,13 +60,36 @@ export async function deleteItemAction(id: string) {
   revalidatePath('/bookmarks');
 }
 
-export async function importBookmarksAction(items: BookmarkItem[], mode: 'merge' | 'replace') {
+export async function importBookmarksAction(
+  items: BookmarkItem[],
+  mode: 'merge' | 'replace',
+  password?: string
+): Promise<{ error?: string; success?: boolean }> {
   if (mode === 'replace') {
-    await overwriteBookmarks(items);
+    if (!password) {
+      return { error: 'Password is required to replace all bookmarks.' };
+    }
+    
+    const validPassword = process.env.POCKETMARKS_PASSWORD || "test1";
+
+    if (password !== validPassword) {
+      return { error: 'Invalid password.' };
+    }
+    
+    try {
+      await createBackup();
+      await overwriteBookmarks(items);
+      revalidatePath('/bookmarks');
+      return { success: true };
+    } catch (e) {
+      console.error(e);
+      return { error: 'Failed to create a backup or save bookmarks.' };
+    }
   } else {
     await mergeBookmarks(items);
+    revalidatePath('/bookmarks');
+    return { success: true };
   }
-  revalidatePath('/bookmarks');
 }
 
 export async function exportBookmarksAction(): Promise<string> {
@@ -66,4 +98,8 @@ export async function exportBookmarksAction(): Promise<string> {
 
 export async function exportSelectedBookmarksAction(ids: string[]): Promise<string> {
     return await exportSelectedBookmarks(ids);
+}
+
+export async function checkDeadLinksAction(): Promise<Record<string, string>> {
+  return await checkAllLinks();
 }

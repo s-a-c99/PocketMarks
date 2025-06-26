@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useMemo, useTransition, Fragment, useRef } from "react";
-import { Plus, Folder as FolderIcon, FolderPlus, Pencil, Trash2, ChevronDown } from "lucide-react";
+import { Plus, Folder as FolderIcon, FolderPlus, Pencil, Trash2, ChevronDown, Link2Off, Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { Bookmark, BookmarkItem, Folder } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
 import { ItemDialog } from "./item-dialog";
+import { PasswordConfirmationDialog } from "./password-confirmation-dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Checkbox } from "./ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { deleteItemAction, saveItemAction, importBookmarksAction, exportBookmarksAction, exportSelectedBookmarksAction } from "@/lib/actions";
+import { deleteItemAction, saveItemAction, importBookmarksAction, exportBookmarksAction, exportSelectedBookmarksAction, checkDeadLinksAction } from "@/lib/actions";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card } from "./ui/card";
 import {
@@ -80,6 +81,14 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importModeRef = useRef<'merge' | 'replace'>('merge');
+
+  // State for password confirmation
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState<BookmarkItem[] | null>(null);
+
+  // State for dead link checker
+  const [isCheckingLinks, setIsCheckingLinks] = useState(false);
+  const [linkStatuses, setLinkStatuses] = useState<Record<string, string>>({});
 
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
@@ -191,15 +200,44 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       
       const importedItems = parseNodes(doc.body.childNodes);
       
-      startTransition(() => {
-        importBookmarksAction(importedItems, importModeRef.current).then(() => {
-          toast({ title: "Import Successful", description: "Your bookmarks have been imported." });
-        })
-      });
-
+      if (importModeRef.current === 'replace') {
+        setPendingImportData(importedItems);
+        setIsPasswordDialogOpen(true);
+      } else {
+        startTransition(() => {
+            importBookmarksAction(importedItems, 'merge').then(() => {
+                toast({ title: "Import Successful", description: "Your bookmarks have been merged." });
+            })
+        });
+      }
     };
     reader.readAsText(file);
     event.target.value = ''; // Reset input
+  };
+  
+  const handlePasswordConfirm = (password: string) => {
+    if (!pendingImportData) return;
+
+    startTransition(() => {
+        importBookmarksAction(pendingImportData, 'replace', password).then((result) => {
+            if (result?.error) {
+                toast({ variant: "destructive", title: "Import Failed", description: result.error });
+            } else {
+                toast({ title: "Import Successful", description: "Your bookmarks have been replaced." });
+            }
+            setPendingImportData(null);
+        });
+    });
+  };
+
+  const handleCheckLinks = () => {
+    setIsCheckingLinks(true);
+    startTransition(async () => {
+        const statuses = await checkDeadLinksAction();
+        setLinkStatuses(statuses);
+        setIsCheckingLinks(false);
+        toast({ title: "Link check complete", description: "Potentially dead links have been marked." });
+    });
   };
   
   const downloadHtmlFile = (htmlContent: string, filename: string) => {
@@ -272,7 +310,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     });
   };
 
-
   const filteredItems = useMemo(() => filterItems(initialItems, searchTerm), [initialItems, searchTerm]);
 
   const renderItems = (items: BookmarkItem[], parentId: string | null = null) => {
@@ -327,10 +364,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-4 pt-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                         {folder.children.map(item => (
                             <Fragment key={item.id}>
-                                {item.type === 'bookmark' && <BookmarkCard bookmark={item} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} isSelected={selectedIds.has(item.id)} onSelectionChange={handleSelectionChange} />}
+                                {item.type === 'bookmark' && <BookmarkCard bookmark={item} status={linkStatuses[item.id]} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} isSelected={selectedIds.has(item.id)} onSelectionChange={handleSelectionChange} />}
                             </Fragment>
                         ))}
                     </div>
@@ -340,9 +377,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             ))}
           </Accordion>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
               {bookmarks.map((bookmark) => (
-                  <BookmarkCard key={bookmark.id} bookmark={bookmark} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} isSelected={selectedIds.has(bookmark.id)} onSelectionChange={handleSelectionChange} />
+                  <BookmarkCard key={bookmark.id} bookmark={bookmark} status={linkStatuses[bookmark.id]} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} isSelected={selectedIds.has(bookmark.id)} onSelectionChange={handleSelectionChange} />
               ))}
           </div>
         </div>
@@ -359,21 +396,21 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
-            disabled={isPending}
+            disabled={isPending || isCheckingLinks}
           />
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
-        <div className="flex gap-4">
-            <Button onClick={handleAddNewBookmark} className="font-headline w-full md:w-auto" disabled={isPending}>
+        <div className="flex gap-4 flex-wrap">
+            <Button onClick={handleAddNewBookmark} className="font-headline" disabled={isPending || isCheckingLinks}>
                 <Plus className="mr-2 h-4 w-4" /> Bookmark
             </Button>
-            <Button onClick={handleAddNewFolder} variant="outline" className="font-headline w-full md:w-auto" disabled={isPending}>
+            <Button onClick={handleAddNewFolder} variant="outline" className="font-headline" disabled={isPending || isCheckingLinks}>
                 <FolderPlus className="mr-2 h-4 w-4" /> Folder
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="font-headline hidden md:inline-flex" disabled={isPending}>
+                <Button variant="outline" className="font-headline" disabled={isPending || isCheckingLinks}>
                   Import <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -381,14 +418,18 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 <DropdownMenuItem onClick={() => handleImportClick('merge')}>
                   Merge with existing
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleImportClick('replace')} className="text-destructive">
+                <DropdownMenuItem onClick={() => handleImportClick('replace')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                   Replace all
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" className="font-headline hidden md:inline-flex" onClick={handleExport} disabled={isPending}>Export All</Button>
-            <Button variant="outline" className="font-headline hidden md:inline-flex" onClick={handleExportSelected} disabled={isPending || selectedIds.size === 0}>Export Selected</Button>
+            <Button variant="outline" className="font-headline" onClick={handleExport} disabled={isPending || isCheckingLinks}>Export All</Button>
+            <Button variant="outline" className="font-headline" onClick={handleExportSelected} disabled={isPending || isCheckingLinks || selectedIds.size === 0}>Export Selected</Button>
+            <Button variant="outline" className="font-headline" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
+                {isCheckingLinks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2Off className="mr-2 h-4 w-4" />}
+                Check for dead links
+            </Button>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
         </div>
       </div>
@@ -411,6 +452,14 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         onItemSaved={handleSaveItem}
         itemToEdit={itemToEdit}
         parentId={dialogParentId}
+      />
+
+      <PasswordConfirmationDialog
+        isOpen={isPasswordDialogOpen}
+        setIsOpen={setIsPasswordDialogOpen}
+        onConfirm={handlePasswordConfirm}
+        title="Confirm Replacement"
+        description="This is a destructive action. To proceed, please enter your password to confirm you want to replace all your current bookmarks."
       />
 
       <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
