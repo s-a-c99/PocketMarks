@@ -29,7 +29,7 @@ export default async function BookmarksPage() {
             </div>
         </div>
       </header>
-      <div className="w-full max-w-7xl mx-auto py-8 px-2">
+      <div className="w-full mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <BookmarkList initialItems={bookmarks} />
       </div>
       <AppFooter />

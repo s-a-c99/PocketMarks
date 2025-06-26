@@ -1,12 +1,5 @@
 [
   {
-    "id": "514a1268-8273-4344-a487-8d1e40b4e1f5",
-    "type": "folder",
-    "title": "Bookmarks bar",
-    "children": [],
-    "createdAt": "2025-06-26T09:46:33.000Z"
-  },
-  {
     "id": "6d910a8e-310c-4d20-9ed4-a3942022e458",
     "type": "folder",
     "title": "Pinboard",
@@ -24,13 +17,6 @@
     "id": "a8190678-5b8f-471d-83f3-1d9b2d070f60",
     "type": "folder",
     "title": "Unsynchronized Pinboard",
-    "children": [],
-    "createdAt": "2025-05-17T21:53:25.000Z"
-  },
-  {
-    "id": "87611f0e-9094-470e-b61d-629933919452",
-    "type": "folder",
-    "title": "Other bookmarks",
     "children": [],
     "createdAt": "2025-05-17T21:53:25.000Z"
   },

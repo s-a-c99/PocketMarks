@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useMemo, useTransition, useRef } from "react";
+import { useState, useMemo, useTransition, useRef, useEffect } from "react";
 import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
+import { FolderCard } from "./folder-card";
 import { ItemDialog } from "./item-dialog";
 import { PasswordConfirmationDialog } from "./password-confirmation-dialog";
+import { SyncComparisonDialog } from "./sync-comparison-dialog";
+import { BreadcrumbNav } from "./breadcrumb-nav";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -19,12 +22,6 @@ import {
   checkDeadLinksAction,
 } from "@/lib/actions";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -34,30 +31,92 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2 } from "lucide-react";
-import { Checkbox } from "./ui/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+// Helper functions for navigation
+const findItem = (items: BookmarkItem[], id: string): BookmarkItem | undefined => {
+  for (const item of items) {
+    if (item.id === id) return item;
+    if (item.type === 'folder') {
+      const found = findItem(item.children, id);
+      if (found) return found;
+    }
+  }
+};
+
+const findPath = (items: BookmarkItem[], id: string): Folder[] => {
+  for (const item of items) {
+    if (item.id === id) return item.type === 'folder' ? [item as Folder] : [];
+    if (item.type === 'folder') {
+      const path = findPath(item.children, id);
+      if (path.length > 0 || (path.length === 0 && item.children.some(c => c.id === id))) {
+        return [item, ...path];
+      }
+    }
+  }
+  return [];
+};
+
+function sortItems(items: BookmarkItem[], sortBy: string): BookmarkItem[] {
+  const sorted = [...items].sort((a, b) => {
+    // Keep folders on top unless sorting is specified otherwise
+    if (a.type === 'folder' && b.type !== 'folder') return -1;
+    if (a.type !== 'folder' && b.type === 'folder') return 1;
+
+    switch (sortBy) {
+      case 'date-desc':
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      case 'date-asc':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'alpha-asc':
+        return a.title.localeCompare(b.title);
+      case 'alpha-desc':
+        return b.title.localeCompare(a.title);
+      default:
+        return 0;
+    }
+  });
+
+  return sorted.map(item => {
+    if (item.type === 'folder') {
+      return { ...item, children: sortItems(item.children, sortBy) };
+    }
+    return item;
+  });
+}
 
 function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
   if (!term) return items;
   const lowerCaseTerm = term.toLowerCase();
 
-  return items.reduce((acc, item) => {
-    if (item.title.toLowerCase().includes(lowerCaseTerm)) {
-      acc.push(item);
-      return acc;
+  const results: BookmarkItem[] = [];
+  const traverse = (item: BookmarkItem) => {
+    let matches = false;
+    if(item.title.toLowerCase().includes(lowerCaseTerm)) {
+        matches = true;
+    }
+    if(item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm)) {
+        matches = true;
     }
 
     if (item.type === 'folder') {
-      const matchingChildren = filterItems(item.children, term);
-      if (matchingChildren.length > 0) {
-        acc.push({ ...item, children: matchingChildren });
-      }
-    } else if (item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm)) {
-      acc.push(item);
+        item.children.forEach(traverse);
     }
-    return acc;
-  }, [] as BookmarkItem[]);
+    
+    if(matches) {
+        results.push(item);
+    }
+  }
+  items.forEach(traverse);
+  return results;
 }
 
 
@@ -74,13 +133,33 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [pendingImportData, setPendingImportData] = useState<BookmarkItem[] | null>(null);
+  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
+  const [itemsToCompare, setItemsToCompare] = useState<BookmarkItem[]>([]);
 
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [linkStatuses, setLinkStatuses] = useState<Record<string, string>>({});
 
-  useMemo(() => {
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState('date-desc');
+
+  useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
+  
+  const sortedItems = useMemo(() => sortItems(items, sortBy), [items, sortBy]);
+  const filteredItems = useMemo(() => filterItems(sortedItems, searchTerm), [sortedItems, searchTerm]);
+
+  const currentFolder = useMemo(() => currentFolderId ? findItem(items, currentFolderId) as Folder : null, [items, currentFolderId]);
+  const currentPath = useMemo(() => currentFolderId ? findPath(items, currentFolderId) : [], [items, currentFolderId]);
+  
+  const currentItems = useMemo(() => {
+    if (searchTerm) {
+        return filteredItems;
+    }
+    const itemsToShow = currentFolder ? currentFolder.children : sortedItems;
+    // When not searching, we sort the items inside the current view
+    return sortItems(itemsToShow, sortBy);
+  }, [currentFolder, sortedItems, filteredItems, searchTerm, sortBy]);
 
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
@@ -92,7 +171,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setItemToEdit(folderScaffold);
     setIsDialogOpen(true);
   };
-  
+
   const handleEdit = (item: BookmarkItem) => {
     setItemToEdit(item);
     setIsDialogOpen(true);
@@ -101,130 +180,100 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const handleDelete = (id: string) => {
     setItemToDelete(id);
   };
-  
+
   const confirmDelete = () => {
     if (!itemToDelete) return;
     startTransition(() => {
       deleteItemAction(itemToDelete).then(() => {
         toast({ title: "Item deleted", description: "The item has been removed." });
         setItemToDelete(null);
+        setSelectedIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(itemToDelete);
+            return newSet;
+        });
       });
     });
   };
 
   const handleSaveItem = (values: Omit<BookmarkItem, 'id' | 'children' | 'createdAt'>) => {
     const isEditing = !!itemToEdit && !!itemToEdit.id;
-    
     const itemToSave: BookmarkItem = {
-        id: isEditing ? itemToEdit.id : uuidv4(),
-        ...values,
-        createdAt: isEditing ? (itemToEdit.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      id: isEditing ? itemToEdit.id : uuidv4(),
+      ...values,
+      createdAt: isEditing ? (itemToEdit.createdAt || new Date().toISOString()) : new Date().toISOString(),
     } as BookmarkItem;
 
     if (itemToSave.type === 'folder' && !isEditing) {
-        (itemToSave as Folder).children = [];
+      (itemToSave as Folder).children = [];
     }
-
+    
     startTransition(() => {
-        saveItemAction(itemToSave, null).then(() => {
-             toast({
-                title: `${itemToSave.type.charAt(0).toUpperCase() + itemToSave.type.slice(1)} ${isEditing ? 'updated' : 'added'}`,
-                description: `"${itemToSave.title}" has been saved.`
-            });
+      saveItemAction(itemToSave, currentFolderId).then(() => {
+        toast({
+          title: `${itemToSave.type.charAt(0).toUpperCase() + itemToSave.type.slice(1)} ${isEditing ? 'updated' : 'added'}`,
+          description: `"${itemToSave.title}" has been saved.`
         });
+      });
     });
   };
-
+  
   const handleImportClick = (mode: 'merge' | 'replace') => {
     fileInputRef.current?.setAttribute('data-import-mode', mode);
     fileInputRef.current?.click();
   }
-
+  
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     const mode = fileInputRef.current?.getAttribute('data-import-mode') as 'merge' | 'replace';
     if (!file || !mode) return;
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const content = e.target?.result as string;
-        if (!content) return;
+    const fileContent = await file.text();
+    if (!fileContent) return;
         
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(content, "text/html");
-
-        const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
-            let items: BookmarkItem[] = [];
-            // Direct children of DL/P are DTs
-            for (const child of Array.from(root.children)) {
-              if (child.tagName === 'DT') {
-                const a = child.querySelector('A');
-                const h3 = child.querySelector('H3');
-                
-                const add_date_attr = a?.getAttribute('add_date') || h3?.getAttribute('add_date');
-                const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
-                const createdAt = new Date(add_date).toISOString();
-
-                if (h3) { // It's a folder
-                  const dl = child.nextElementSibling;
-                  const children = dl && dl.tagName === 'DL' ? parseBookmarksRecursive(dl) : [];
-                  items.push({
-                    id: uuidv4(),
-                    type: 'folder',
-                    title: h3.textContent || 'Untitled Folder',
-                    children: children,
-                    createdAt: createdAt,
-                  });
-                } else if (a) { // It's a bookmark
-                  const url = a.getAttribute('href');
-                  const title = a.textContent || 'Untitled Bookmark';
-                  if (url) {
-                    items.push({
-                      id: uuidv4(),
-                      type: 'bookmark',
-                      title: title,
-                      url: url,
-                      createdAt: createdAt,
-                    });
-                  }
-                }
-              }
-            }
-            return items;
-        };
-
-        const importedItems = parseBookmarksRecursive(doc.body);
-        
-        if (mode === 'replace') {
-            setPendingImportData(importedItems);
-            setIsPasswordDialogOpen(true);
+    startTransition(() => {
+      importBookmarksAction({ fileContent, mode }).then((result) => {
+        if (result.error) {
+          toast({ variant: "destructive", title: "Import Failed", description: result.error });
+        } else if (mode === 'replace' && result.needsPassword) {
+           setPendingImportData(result.importedItems || []);
+           setIsPasswordDialogOpen(true);
+        } else if (mode === 'merge' && result.itemsToCompare && result.itemsToCompare.length > 0) {
+          setItemsToCompare(result.itemsToCompare);
+          setIsSyncDialogOpen(true);
+        } else if (mode === 'merge') {
+          toast({ title: "Nothing to import", description: "Your bookmarks are already up to date." });
         } else {
-            startTransition(() => {
-                importBookmarksAction(importedItems, 'merge').then(() => {
-                    toast({ title: "Import Successful", description: "Your bookmarks have been merged." });
-                })
-            });
+           toast({ title: "Import Successful", description: "Your bookmarks have been imported." });
         }
-    };
+      });
+    });
     
-    reader.onerror = () => {
-        toast({ variant: "destructive", title: "Import Failed", description: "Could not read the selected file." });
-    }
-
-    reader.readAsText(file);
     if(event.target) event.target.value = '';
   };
   
   const handlePasswordConfirm = (password: string) => {
     if (!pendingImportData) return;
     startTransition(() => {
-        importBookmarksAction(pendingImportData, 'replace', password).then((result) => {
-            if (result?.error) {
-                toast({ variant: "destructive", title: "Import Failed", description: result.error });
+      importBookmarksAction({ items: pendingImportData, mode: 'replace', password: password }).then((result) => {
+          if (result.error) {
+              toast({ variant: "destructive", title: "Import Failed", description: result.error });
+          } else {
+              toast({ title: "Import Successful", description: "Your bookmarks have been replaced." });
+          }
+          setPendingImportData(null);
+      });
+    });
+  };
+
+  const handleSyncConfirm = (itemsToImport: BookmarkItem[]) => {
+    startTransition(() => {
+        importBookmarksAction({ items: itemsToImport, mode: 'merge' }).then((result) => {
+            if (result.error) {
+                toast({ variant: "destructive", title: "Merge Failed", description: result.error });
             } else {
-                toast({ title: "Import Successful", description: "Your bookmarks have been replaced." });
+                toast({ title: "Merge Successful", description: "Selected items have been added." });
             }
-            setPendingImportData(null);
         });
     });
   };
@@ -262,11 +311,16 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
 
   const handleExportSelected = () => {
+    if (selectedIds.size === 0) {
+        toast({variant: "destructive", title: "Export Failed", description: "No items selected."});
+        return;
+    }
     startTransition(async () => {
         const htmlContent = await exportSelectedBookmarksAction(Array.from(selectedIds));
         if (htmlContent) {
             downloadHtmlFile(htmlContent, 'pocketmarks_selected_export.html');
             toast({title: "Export Successful", description: `${selectedIds.size} items have been downloaded.`});
+            setSelectedIds(new Set());
         } else {
             toast({variant: "destructive", title: "Export Failed", description: "Could not generate export file."});
         }
@@ -282,7 +336,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
   
   const handleSelectionChange = (itemId: string, checked: boolean) => {
-    const item = [...items].flatMap(i => i.type === 'folder' ? [i, ...i.children] : [i]).find(i => i.id === itemId);
+    const item = findItem(items, itemId);
     if (!item) return;
 
     const idsToChange = getDescendantIds(item);
@@ -297,113 +351,108 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         return newSet;
     });
   };
-
-  const filteredItems = useMemo(() => filterItems(items, searchTerm), [items, searchTerm]);
-
-  const renderItems = (itemsToRender: BookmarkItem[], isSublevel = false) => (
-    <div className={`space-y-4 ${isSublevel ? 'pl-4' : ''}`}>
-      {itemsToRender.map(item =>
-        item.type === 'folder' ? (
-          <Accordion key={item.id} type="single" collapsible className="w-full">
-            <AccordionItem value={item.id} className="border rounded-lg bg-card/80">
-              <AccordionTrigger className="px-4 py-2 hover:no-underline">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Checkbox
-                    id={`select-${item.id}`}
-                    checked={selectedIds.has(item.id)}
-                    onCheckedChange={(checked) => handleSelectionChange(item.id, !!checked)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <FolderPlus className="h-5 w-5 text-primary" />
-                  <span className="font-headline text-base truncate">{item.title}</span>
-                  <span className="text-sm text-muted-foreground">({item.children.length})</span>
-                </div>
-                <div className="flex items-center gap-2 mr-2">
-                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleEdit(item); }}>
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/80 hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="p-4 pt-0">
-                {renderItems(item.children, true)}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        ) : (
-          <BookmarkCard 
-            key={item.id} 
-            bookmark={item}
-            status={linkStatuses[item.id]} 
-            onEdit={handleEdit} 
-            onDelete={handleDelete} 
-            isSelected={selectedIds.has(item.id)} 
-            onSelectionChange={handleSelectionChange}
-          />
-        )
-      )}
-    </div>
-  );
-
+  
   return (
     <div className="w-full">
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative flex-grow">
-          <Input
-            placeholder="Search bookmarks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-11 text-base"
-            disabled={isPending || isCheckingLinks}
-          />
-           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-            <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending || isCheckingLinks}>
-                <Plus className="mr-2 h-4 w-4" /> Add Bookmark
-            </Button>
-            <Button onClick={handleAddNewFolder} variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
-                <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
-                  Import <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleImportClick('merge')}>
-                  Merge with existing
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleImportClick('replace')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                  Replace all
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-grow">
+            <Input
+                placeholder="Search bookmarks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 text-base"
+                disabled={isPending || isCheckingLinks}
+            />
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full md:w-[180px] h-11">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                <SelectItem value="alpha-asc">Name (A-Z)</SelectItem>
+                <SelectItem value="alpha-desc">Name (Z-A)</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <Button variant="outline" className="font-headline h-11" onClick={handleExport} disabled={isPending || isCheckingLinks}>Export All</Button>
-            <Button variant="outline" className="font-headline h-11" onClick={handleExportSelected} disabled={isPending || isCheckingLinks || selectedIds.size === 0}>Export Selected</Button>
-            <Button variant="outline" className="font-headline h-11" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
-                {isCheckingLinks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2Off className="mr-2 h-4 w-4" />}
-                Check for dead links
-            </Button>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
+            <div className="flex gap-2 flex-wrap">
+                <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                    <Plus className="mr-2 h-4 w-4" /> Add Bookmark
+                </Button>
+                <Button onClick={handleAddNewFolder} variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                    <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
+                </Button>
+            </div>
         </div>
-      </div>
-      
-      {filteredItems.length > 0 ? (
-        renderItems(filteredItems)
-      ) : (
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
-            <h3 className="text-2xl font-semibold text-muted-foreground font-headline">No Bookmarks Found</h3>
-            <p className="mt-2 text-muted-foreground">
-                {searchTerm ? "Try a different search term or " : "Your bookmark list is empty. "}
-                <button onClick={handleAddNewBookmark} className="text-primary hover:underline font-semibold">add one now</button>.
-            </p>
+
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                Import / Export <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleImportClick('merge')}>
+                Merge from file...
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleImportClick('replace')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                Replace from file...
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExport} disabled={isPending || isCheckingLinks}>Export all...</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportSelected} disabled={isPending || isCheckingLinks || selectedIds.size === 0}>Export selected...</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="outline" className="font-headline h-11" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
+              {isCheckingLinks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2Off className="mr-2 h-4 w-4" />}
+              Check for dead links
+          </Button>
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
         </div>
-      )}
+
+        {!searchTerm && <BreadcrumbNav path={currentPath} onNavigate={setCurrentFolderId} />}
+
+        {currentItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3">
+                {currentItems.map(item =>
+                    item.type === 'folder' ? (
+                        <FolderCard
+                            key={item.id}
+                            folder={item}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                            onNavigate={setCurrentFolderId}
+                            isSelected={selectedIds.has(item.id)}
+                            onSelectionChange={handleSelectionChange}
+                        />
+                    ) : (
+                        <BookmarkCard
+                            key={item.id}
+                            bookmark={item}
+                            status={linkStatuses[item.id]}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                            isSelected={selectedIds.has(item.id)}
+                            onSelectionChange={handleSelectionChange}
+                        />
+                    )
+                )}
+            </div>
+        ) : (
+            <div className="text-center py-16 border-2 border-dashed rounded-lg">
+                <h3 className="text-2xl font-semibold text-muted-foreground font-headline">No Bookmarks Found</h3>
+                <p className="mt-2 text-muted-foreground">
+                    {searchTerm ? "Try a different search term. " : "This folder is empty. "}
+                    <button onClick={handleAddNewBookmark} className="text-primary hover:underline font-semibold">Add a new bookmark</button> or
+                    <button onClick={handleAddNewFolder} className="text-primary hover:underline font-semibold ml-1">folder</button>.
+                </p>
+            </div>
+        )}
 
       <ItemDialog
         isOpen={isDialogOpen}
@@ -417,6 +466,12 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         onConfirm={handlePasswordConfirm}
         title="Confirm Replacement"
         description="This is a destructive action. To proceed, please enter your password to confirm you want to replace all your current bookmarks."
+      />
+      <SyncComparisonDialog
+        isOpen={isSyncDialogOpen}
+        setIsOpen={setIsSyncDialogOpen}
+        onConfirm={handleSyncConfirm}
+        itemsToCompare={itemsToCompare}
       />
       
       <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>

@@ -14,6 +14,7 @@ async function readBookmarksFile(): Promise<BookmarkItem[]> {
   noStore();
   try {
     const data = await fs.readFile(bookmarksFilePath, 'utf-8');
+    if (!data) return [];
     const parsedData = JSON.parse(data);
     if (Array.isArray(parsedData)) {
       return parsedData as BookmarkItem[];
@@ -35,12 +36,11 @@ async function writeBookmarksFile(bookmarks: BookmarkItem[]): Promise<void> {
 
 export async function getBookmarks(): Promise<BookmarkItem[]> {
   const bookmarks = await readBookmarksFile();
-  // Ensure all items have a creation date for sorting
   let needsWrite = false;
   const addTimestamp = (items: BookmarkItem[]) => {
     items.forEach(item => {
       if (!item.createdAt) {
-        item.createdAt = new Date(0).toISOString(); // Old items get a default old date
+        item.createdAt = new Date(0).toISOString();
         needsWrite = true;
       }
       if (item.type === 'folder') {
@@ -70,38 +70,6 @@ function findAndMutate(items: BookmarkItem[], predicate: (item: BookmarkItem) =>
     return false;
 }
 
-export async function saveItem(itemToSave: BookmarkItem, parentId: string | null): Promise<void> {
-  const bookmarks = await readBookmarksFile();
-
-  let itemWasUpdated = false;
-  // Try to find and update an existing item
-  findAndMutate(bookmarks, (item) => item.id === itemToSave.id, (items, index) => {
-    // Preserve children if it's a folder being updated
-    if (items[index].type === 'folder' && itemToSave.type === 'folder') {
-      (itemToSave as Folder).children = (items[index] as Folder).children;
-    }
-    // Preserve original creation date
-    itemToSave.createdAt = items[index].createdAt || new Date().toISOString();
-    items[index] = itemToSave;
-    itemWasUpdated = true;
-  });
-
-  // If it's a new item, add it
-  if (!itemWasUpdated) {
-    itemToSave.createdAt = new Date().toISOString();
-    if (parentId) {
-      findAndMutate(bookmarks, (item) => item.id === parentId && item.type === 'folder', (items, index) => {
-        (items[index] as Folder).children.push(itemToSave);
-      });
-    } else {
-      bookmarks.push(itemToSave);
-    }
-  }
-
-  await writeBookmarksFile(bookmarks);
-}
-
-// Recursively removes an item by ID from a list of items
 function deleteItemRecursive(items: BookmarkItem[], idToDelete: string): BookmarkItem[] {
     const filteredItems = items.filter(item => item.id !== idToDelete);
     return filteredItems.map(item => {
@@ -115,6 +83,39 @@ function deleteItemRecursive(items: BookmarkItem[], idToDelete: string): Bookmar
     });
 }
 
+export async function saveItem(itemToSave: BookmarkItem, parentId: string | null): Promise<void> {
+  const bookmarks = await readBookmarksFile();
+  const cleanedBookmarks = deleteItemRecursive(bookmarks, itemToSave.id);
+
+  let itemWasUpdated = false;
+  findAndMutate(cleanedBookmarks, (item) => item.id === itemToSave.id, (items, index) => {
+    if (items[index].type === 'folder' && itemToSave.type === 'folder') {
+      (itemToSave as Folder).children = (items[index] as Folder).children;
+    }
+    itemToSave.createdAt = items[index].createdAt || new Date().toISOString();
+    items[index] = itemToSave;
+    itemWasUpdated = true;
+  });
+
+  if (!itemWasUpdated) {
+    itemToSave.createdAt = new Date().toISOString();
+    if (parentId) {
+      let parentFound = false;
+      findAndMutate(cleanedBookmarks, (item) => item.id === parentId && item.type === 'folder', (items, index) => {
+        (items[index] as Folder).children.push(itemToSave);
+        parentFound = true;
+      });
+      if (!parentFound) {
+        cleanedBookmarks.push(itemToSave);
+      }
+    } else {
+      cleanedBookmarks.push(itemToSave);
+    }
+  }
+  await writeBookmarksFile(cleanedBookmarks);
+}
+
+
 export async function deleteItem(id: string): Promise<void> {
   let bookmarks = await readBookmarksFile();
   bookmarks = deleteItemRecursive(bookmarks, id);
@@ -125,32 +126,119 @@ export async function overwriteBookmarks(items: BookmarkItem[]): Promise<void> {
     await writeBookmarksFile(items);
 }
 
-function getAllUrls(items: BookmarkItem[]): Set<string> {
-    const urls = new Set<string>();
-    items.forEach(item => {
+function getAllUrls(items: BookmarkItem[], urlSet: Set<string> = new Set()): Set<string> {
+    for (const item of items) {
         if (item.type === 'bookmark') {
-            urls.add(item.url);
+            const normalizedUrl = item.url.trim().replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+            urlSet.add(normalizedUrl);
         } else if (item.type === 'folder') {
-            getAllUrls(item.children).forEach(url => urls.add(url));
+            getAllUrls(item.children, urlSet);
         }
-    });
-    return urls;
+    }
+    return urlSet;
 }
 
-export async function mergeBookmarks(items: BookmarkItem[]): Promise<void> {
+const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
+    let items: BookmarkItem[] = [];
+    // Find direct child <DL>, which contains the list
+    const dl = Array.from(root.children).find(el => el.tagName === 'DL');
+    if (!dl) return items;
+
+    // Iterate over <DT> elements inside the <DL>
+    for (const child of Array.from(dl.children)) {
+        if (child.tagName === 'DT') {
+            const a = child.querySelector('a');
+            const h3 = child.querySelector('h3');
+            
+            const add_date_attr = a?.getAttribute('add_date') || h3?.getAttribute('add_date');
+            const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
+            const createdAt = new Date(add_date).toISOString();
+
+            if (h3) { // It's a folder
+              // The folder's content is in the next <DL> element
+              const folderDl = child.nextElementSibling;
+              const children = folderDl && folderDl.tagName === 'DL' ? parseBookmarksRecursive(folderDl) : [];
+              items.push({
+                id: uuidv4(),
+                type: 'folder',
+                title: h3.textContent || 'Untitled Folder',
+                children: children,
+                createdAt: createdAt,
+              });
+            } else if (a) { // It's a bookmark
+              const url = a.getAttribute('href');
+              const title = a.textContent || 'Untitled Bookmark';
+              if (url) {
+                items.push({
+                  id: uuidv4(),
+                  type: 'bookmark',
+                  title: title,
+                  url: url,
+                  createdAt: createdAt,
+                });
+              }
+            }
+        }
+    }
+    return items;
+};
+
+export async function parseBookmarks(fileContent: string): Promise<BookmarkItem[]> {
+    const { JSDOM } = await import('jsdom');
+    const dom = new JSDOM(fileContent);
+    const doc = dom.window.document;
+    return parseBookmarksRecursive(doc.body);
+}
+
+export async function parseAndCompareBookmarks(fileContent: string): Promise<BookmarkItem[]> {
+    noStore();
+    const importedItems = await parseBookmarks(fileContent);
     const existingBookmarks = await readBookmarksFile();
     const existingUrls = getAllUrls(existingBookmarks);
 
-    const newItems = items.filter(item => {
-        if (item.type === 'bookmark') {
-            return !existingUrls.has(item.url);
-        }
-        // For now, we'll just add new folders, a more complex merge could be implemented
-        return !existingBookmarks.some(b => b.type === 'folder' && b.title === item.title);
-    });
+    const filterNewRecursive = (items: BookmarkItem[]): BookmarkItem[] => {
+        return items.reduce((acc, item) => {
+            if (item.type === 'bookmark') {
+                const normalizedUrl = item.url.trim().replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+                if (!existingUrls.has(normalizedUrl)) {
+                    acc.push(item);
+                }
+            } else if (item.type === 'folder') {
+                const newChildren = filterNewRecursive(item.children);
+                if (newChildren.length > 0) {
+                    acc.push({ ...item, children: newChildren });
+                }
+            }
+            return acc;
+        }, [] as BookmarkItem[]);
+    }
+    
+    return filterNewRecursive(importedItems);
+}
 
-    const updatedBookmarks = [...existingBookmarks, ...newItems];
-    await writeBookmarksFile(updatedBookmarks);
+
+export async function mergeBookmarks(itemsToMerge: BookmarkItem[]): Promise<void> {
+    noStore();
+    const existingBookmarks = await readBookmarksFile();
+
+    const mergeRecursive = (target: BookmarkItem[], source: BookmarkItem[]) => {
+        for (const sourceItem of source) {
+            if (sourceItem.type === 'folder') {
+                let targetFolder = target.find(t => t.type === 'folder' && t.title === sourceItem.title) as Folder | undefined;
+                if (!targetFolder) {
+                    const newFolder = { ...sourceItem, children: [] };
+                    target.push(newFolder);
+                    targetFolder = newFolder;
+                }
+                mergeRecursive(targetFolder.children, sourceItem.children);
+            } else {
+                target.push(sourceItem);
+            }
+        }
+    };
+
+    mergeRecursive(existingBookmarks, itemsToMerge);
+    await writeBookmarksFile(existingBookmarks);
 }
 
 function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
@@ -160,10 +248,10 @@ function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
     items.forEach(item => {
         const addDate = Math.floor(new Date(item.createdAt || 0).getTime() / 1000);
         if (item.type === 'folder') {
-            html += `${indent}    <DT><H3 ADD_DATE="${addDate}">${item.title}</H3>\n`;
+            html += `${indent}    <DT><H3 ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}">${item.title}</H3>\n`;
             html += bookmarksToHtml(item.children, indentLevel + 1);
         } else if (item.type === 'bookmark') {
-            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}">${item.title}</A>\n`;
+            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}">${item.title}</A>\n`;
         }
     });
 
@@ -189,16 +277,13 @@ function filterForExport(items: BookmarkItem[], selectedIds: Set<string>): Bookm
     items.forEach(item => {
         if (selectedIds.has(item.id)) {
             if (item.type === 'folder') {
-                 // If a folder is selected, include it and its (potentially filtered) children
                  result.push({ ...item, children: filterForExport(item.children, selectedIds) });
             } else {
                 result.push(item);
             }
         } else if (item.type === 'folder') {
-            // If a folder is not selected, still check its children
             const filteredChildren = filterForExport(item.children, selectedIds);
             if (filteredChildren.length > 0) {
-                // If any children are selected, include the folder but only with those children
                 result.push({ ...item, children: filteredChildren });
             }
         }
@@ -245,7 +330,7 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
         tasks.push((async () => {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
             const response = await fetch(item.url, { signal: controller.signal, redirect: 'follow' });
             clearTimeout(timeoutId);
 

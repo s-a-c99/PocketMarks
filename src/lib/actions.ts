@@ -11,7 +11,9 @@ import {
   exportSelectedBookmarks, 
   mergeBookmarks,
   createBackup,
-  checkAllLinks
+  checkAllLinks,
+  parseAndCompareBookmarks,
+  parseBookmarks
 } from './bookmark-service';
 import type { BookmarkItem } from '@/types';
 
@@ -21,8 +23,6 @@ export async function login(prevState: { error: string } | undefined, formData: 
   const username = formData.get('username');
   const password = formData.get('password');
 
-  // For now, we use environment variables for a single user.
-  // In a multi-user system, you would look up the user in a database.
   const validUsername = process.env.POCKETMARKS_USERNAME || "user";
   const validPassword = process.env.POCKETMARKS_PASSWORD || "test1";
 
@@ -49,7 +49,6 @@ export async function logout() {
   redirect('/login');
 }
 
-// Item actions
 export async function saveItemAction(item: BookmarkItem, parentId: string | null) {
   await saveItem(item, parentId);
   revalidatePath('/bookmarks');
@@ -60,23 +59,40 @@ export async function deleteItemAction(id: string) {
   revalidatePath('/bookmarks');
 }
 
-export async function importBookmarksAction(
-  items: BookmarkItem[],
-  mode: 'merge' | 'replace',
-  password?: string
-): Promise<{ error?: string; success?: boolean }> {
+type ImportPayload = {
+    fileContent?: string;
+    items?: BookmarkItem[];
+    mode: 'merge' | 'replace';
+    password?: string;
+}
+
+type ImportResult = {
+    error?: string;
+    success?: boolean;
+    needsPassword?: boolean;
+    importedItems?: BookmarkItem[];
+    itemsToCompare?: BookmarkItem[];
+}
+
+export async function importBookmarksAction(payload: ImportPayload): Promise<ImportResult> {
+  const { fileContent, items, mode, password } = payload;
+  
   if (mode === 'replace') {
     if (!password) {
-      return { error: 'Password is required to replace all bookmarks.' };
+      if (fileContent) {
+          const importedItems = await parseBookmarks(fileContent);
+          return { needsPassword: true, importedItems: importedItems };
+      }
+      return { error: 'File content is missing for replacement.' };
     }
     
     const validPassword = process.env.POCKETMARKS_PASSWORD || "test1";
-
     if (password !== validPassword) {
       return { error: 'Invalid password.' };
     }
     
     try {
+      if (!items) return { error: "Items to import are missing."};
       await createBackup();
       await overwriteBookmarks(items);
       revalidatePath('/bookmarks');
@@ -85,10 +101,17 @@ export async function importBookmarksAction(
       console.error(e);
       return { error: 'Failed to create a backup or save bookmarks.' };
     }
-  } else {
-    await mergeBookmarks(items);
-    revalidatePath('/bookmarks');
-    return { success: true };
+
+  } else { // mode === 'merge'
+    if(items) { 
+        await mergeBookmarks(items);
+        revalidatePath('/bookmarks');
+        return { success: true };
+    } else if (fileContent) { 
+        const newItems = await parseAndCompareBookmarks(fileContent);
+        return { itemsToCompare: newItems };
+    }
+    return { error: "Invalid merge payload" };
   }
 }
 
