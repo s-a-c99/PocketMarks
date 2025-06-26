@@ -35,33 +35,46 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
-
 function findItem(items: BookmarkItem[], itemId: string): BookmarkItem | undefined {
-  if (!itemId) return undefined;
-  for (const item of items) {
-    if (item.id === itemId) return item;
-    if (item.type === 'folder') {
-      const found = findItem(item.children, itemId);
-      if (found) return found;
+    if (!itemId) return undefined;
+    for (const item of items) {
+        if (item.id === itemId) return item;
+        if (item.type === 'folder') {
+            const found = findItem(item.children, itemId);
+            if (found) return found;
+        }
     }
-  }
-  return undefined;
+    return undefined;
 }
 
-function findPath(items: BookmarkItem[], itemId: string, currentPath: Folder[] = []): Folder[] | null {
-    for (const item of items) {
-        if (item.id === itemId) {
-            // We found the item, but we need the path *to* it, which is the currentPath.
-            // The item itself will be part of the last breadcrumb, so we add it here.
-            return [...currentPath, item as Folder];
+function findPath(items: BookmarkItem[], itemId: string): Folder[] | null {
+    if (!itemId) return null;
+
+    const find = (
+        currentItems: BookmarkItem[],
+        idToFind: string,
+        currentPath: Folder[]
+    ): Folder[] | null => {
+        for (const item of currentItems) {
+            const newPath = item.type === 'folder' ? [...currentPath, item] : currentPath;
+
+            if (item.id === idToFind) {
+                // If we found the item, and it's a folder, the path includes the item itself.
+                if (item.type === 'folder') {
+                    return newPath;
+                }
+                // If it's a bookmark, the path is just up to its parent.
+                return currentPath;
+            }
+
+            if (item.type === 'folder') {
+                const result = find(item.children, idToFind, newPath);
+                if (result) return result;
+            }
         }
-        if (item.type === 'folder') {
-            const newPath = [...currentPath, item];
-            const result = findPath(item.children, itemId, newPath);
-            if (result) return result;
-        }
-    }
-    return null;
+        return null;
+    };
+    return find(items, itemId, []);
 }
 
 function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
@@ -178,71 +191,71 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const content = e.target?.result as string;
-      if (!content) return;
-      
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(content, "text/html");
-      
-      // A more robust recursive parser for Netscape Bookmark File Format
-      const parseHtmlBookmarks = (root: Element | null): BookmarkItem[] => {
-          if (!root) return [];
-          const items: BookmarkItem[] = [];
-          
-          // Find the <DL> element which is the direct child of the root.
-          const list = root.querySelector(':scope > DL');
-          if (!list) return [];
+        const content = e.target?.result as string;
+        if (!content) return;
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, "text/html");
 
-          // Iterate over direct children of the <DL>
-          for (const child of Array.from(list.children)) {
-            if (child.tagName !== 'DT') continue;
+        // Robust recursive parser for Netscape Bookmark File Format
+        const parseHtmlBookmarks = (dlElement: HTMLDListElement | null): BookmarkItem[] => {
+            if (!dlElement) return [];
+            const items: BookmarkItem[] = [];
+            
+            // In the bookmark format, content is within DTs which are direct children of a DL.
+            const directChildren = Array.from(dlElement.children);
 
-            const anchor = child.querySelector(':scope > A');
-            const header = child.querySelector(':scope > H3');
+            for (const child of directChildren) {
+                // We are interested in DT elements. Skip P tags often used for spacing.
+                if (child.tagName !== 'DT') continue;
 
-            if (anchor) {
-              items.push({
-                id: uuidv4(),
-                type: 'bookmark',
-                title: anchor.textContent || '',
-                url: anchor.getAttribute('href') || '',
-                createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000).toISOString()
-              });
-            } else if (header) {
-              // The folder's content is the next <DL> element
-              const nextDl = child.nextElementSibling;
-              items.push({
-                id: uuidv4(),
-                type: 'folder',
-                title: header.textContent || '',
-                children: nextDl && nextDl.tagName === 'DL' ? parseHtmlBookmarks(nextDl) : [],
-                createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
-              });
+                const anchor = child.querySelector(':scope > A');
+                const header = child.querySelector(':scope > H3');
+
+                if (anchor) {
+                    items.push({
+                        id: uuidv4(),
+                        type: 'bookmark',
+                        title: anchor.textContent || '',
+                        url: anchor.getAttribute('href') || '',
+                        createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000).toISOString()
+                    });
+                } else if (header) {
+                    // A folder's content is in the next sibling DL element.
+                    const nextDl = child.nextElementSibling;
+                    items.push({
+                        id: uuidv4(),
+                        type: 'folder',
+                        title: header.textContent || '',
+                        children: (nextDl && nextDl.tagName === 'DL') ? parseHtmlBookmarks(nextDl as HTMLDListElement) : [],
+                        createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
+                    });
+                }
             }
-          }
-          return items;
-      };
-      
-      const importedItems = parseHtmlBookmarks(doc.body);
-      
-      if (mode === 'replace') {
-        setPendingImportData(importedItems);
-        setIsPasswordDialogOpen(true);
-      } else {
-        startTransition(async () => {
-          const itemsForComparison = await compareBookmarksAction(importedItems);
-          if (itemsForComparison.length > 0) {
-            setItemsToCompare(itemsForComparison);
-            setIsSyncDialogOpen(true);
-          } else {
-            toast({ title: "Nothing to import", description: "Your bookmarks are already up to date." });
-          }
-        });
-      }
+            return items;
+        };
+
+        const importedItems = parseHtmlBookmarks(doc.body.querySelector('DL'));
+
+        if (mode === 'replace') {
+            setPendingImportData(importedItems);
+            setIsPasswordDialogOpen(true);
+        } else {
+            startTransition(async () => {
+                const itemsForComparison = await compareBookmarksAction(importedItems);
+                if (itemsForComparison.length > 0) {
+                    setItemsToCompare(itemsForComparison);
+                    setIsSyncDialogOpen(true);
+                } else {
+                    toast({ title: "Nothing to import", description: "Your bookmarks are already up to date." });
+                }
+            });
+        }
     };
     reader.readAsText(file);
     event.target.value = ''; // Reset input
   };
+
 
   const handleSyncConfirm = (itemsToImport: BookmarkItem[]) => {
       startTransition(() => {
@@ -346,13 +359,12 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     return folder && folder.type === 'folder' ? folder.children : [];
   }, [currentFolderId, initialItems]);
   
-  const breadcrumbs = useMemo(() => {
+ const breadcrumbs = useMemo(() => {
     if (!currentFolderId) return [];
-    const path = findPath(initialItems, currentFolderId);
-    // findPath now returns the full path including the current folder,
-    // so we remove it from the breadcrumbs for display purposes.
-    return path ? path.slice(0, -1) : [];
+    // findPath returns the path *to* the folder, which is what we need.
+    return findPath(initialItems, currentFolderId) || [];
   }, [currentFolderId, initialItems]);
+
 
   const sortedItems = useMemo(() => {
     const itemsToSort = JSON.parse(JSON.stringify(currentItems));
@@ -438,10 +450,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         </div>
       </div>
       
-      <BreadcrumbNav path={breadcrumbs} onNavigate={handleNavigate} />
+      <BreadcrumbNav path={breadcrumbs} onNavigate={handleNavigate} currentFolderId={currentFolderId} />
       
       {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 mt-4">
           {filteredItems.map(item => (
             item.type === 'folder' ? (
               <FolderCard 
@@ -449,7 +461,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 folder={item} 
                 onEdit={handleEdit} 
                 onDelete={() => handleDelete(item)} 
-                onAddInFolder={() => handleNavigate(item.id)}
+                onAddInFolder={() => {
+                  handleNavigate(item.id);
+                  handleAddNewBookmark();
+                }}
                 onNavigate={() => handleNavigate(item.id)}
                 isSelected={selectedIds.has(item.id)}
                 onSelectionChange={handleSelectionChange}

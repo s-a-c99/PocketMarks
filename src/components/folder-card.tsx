@@ -39,7 +39,7 @@ export function FolderCard({ folder, onEdit, onDelete, onAddInFolder, onNavigate
               <FolderIcon className="h-4 w-4 text-primary shrink-0" />
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <CardTitle className="font-headline text-xs font-semibold truncate cursor-pointer text-left hover:text-primary-foreground">
+                  <CardTitle className="font-headline text-xs font-semibold truncate cursor-pointer text-left hover:text-primary">
                     {title}
                   </CardTitle>
                 </TooltipTrigger>
