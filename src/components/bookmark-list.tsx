@@ -57,8 +57,12 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
             if (matchingChildren.length > 0) {
                 acc.push({ ...item, children: matchingChildren });
             }
-        } else if (item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm)) {
-            acc.push(item);
+        } else if (item.type === 'bookmark') {
+            const urlMatch = item.url.toLowerCase().includes(lowerCaseTerm);
+            const tagMatch = item.tags?.some(tag => tag.toLowerCase().includes(lowerCaseTerm));
+            if (urlMatch || tagMatch) {
+              acc.push(item);
+            }
         }
 
         return acc;
@@ -120,7 +124,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     const isEditing = !!itemToEdit && !!itemToEdit.id;
     
     const itemToSave = {
-        id: itemToEdit?.id || uuidv4(),
+        id: isEditing ? itemToEdit.id : uuidv4(),
         ...values,
     };
 
@@ -167,7 +171,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                         id: uuidv4(),
                         type: 'bookmark',
                         title: anchor.textContent || '',
-                        url: anchor.getAttribute('href') || ''
+                        url: anchor.getAttribute('href') || '',
+                        tags: [],
                     });
                 } else if (header) {
                     const nextDl = (node as HTMLElement).nextElementSibling;
@@ -227,62 +232,64 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
     return (
       <TooltipProvider>
-        <Accordion type="multiple" className="w-full space-y-4" defaultValue={folders.map(f => f.id)}>
-          {folders.map(folder => (
-            <AccordionItem key={folder.id} value={folder.id} className="border-none">
-              <Card>
-                <AccordionTrigger className="p-4 font-headline text-lg hover:no-underline">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-2">
-                      <FolderIcon className="h-5 w-5 text-primary" />
-                      {folder.title}
-                    </div>
-                    <div className="flex items-center gap-1 pr-2">
-                        <Tooltip>
-                           <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); handleAddItemToFolder(folder.id)}}>
-                                    <FolderPlus className="h-4 w-4" />
-                                </Button>
-                           </TooltipTrigger>
-                           <TooltipContent><p>Add item to folder</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
+        <div className="space-y-4">
+          <Accordion type="multiple" className="w-full space-y-4" defaultValue={folders.map(f => f.id)}>
+            {folders.map(folder => (
+              <AccordionItem key={folder.id} value={folder.id} className="border-none">
+                <Card>
+                  <AccordionTrigger className="p-4 font-headline text-lg hover:no-underline">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <FolderIcon className="h-5 w-5 text-primary" />
+                        {folder.title}
+                      </div>
+                      <div className="flex items-center gap-1 pr-2">
+                          <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); handleEdit(folder)}}>
-                                    <Pencil className="h-4 w-4" />
-                                </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); handleAddItemToFolder(folder.id)}}>
+                                      <FolderPlus className="h-4 w-4" />
+                                  </Button>
                             </TooltipTrigger>
-                           <TooltipContent><p>Edit folder name</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/80 hover:text-destructive" onClick={(e) => { e.preventDefault(); handleDelete(folder)}}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                           <TooltipContent><p>Delete folder</p></TooltipContent>
-                        </Tooltip>
+                            <TooltipContent><p>Add item to folder</p></TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); handleEdit(folder)}}>
+                                      <Pencil className="h-4 w-4" />
+                                  </Button>
+                              </TooltipTrigger>
+                            <TooltipContent><p>Edit folder name</p></TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/80 hover:text-destructive" onClick={(e) => { e.preventDefault(); handleDelete(folder)}}>
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                              </TooltipTrigger>
+                            <TooltipContent><p>Delete folder</p></TooltipContent>
+                          </Tooltip>
+                      </div>
                     </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="p-4 pt-0">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-                      {folder.children.map(item => (
-                          <Fragment key={item.id}>
-                              {item.type === 'bookmark' && <BookmarkCard bookmark={item} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} />}
-                          </Fragment>
-                      ))}
-                  </div>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-          ))}
-        </Accordion>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mt-4">
-            {bookmarks.map((bookmark) => (
-                <BookmarkCard key={bookmark.id} bookmark={bookmark} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} />
+                  </AccordionTrigger>
+                  <AccordionContent className="p-4 pt-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                        {folder.children.map(item => (
+                            <Fragment key={item.id}>
+                                {item.type === 'bookmark' && <BookmarkCard bookmark={item} onEdit={(bm) => handleEdit(bm, folder.id)} onDelete={() => handleDelete(item)} />}
+                            </Fragment>
+                        ))}
+                    </div>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
             ))}
+          </Accordion>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+              {bookmarks.map((bookmark) => (
+                  <BookmarkCard key={bookmark.id} bookmark={bookmark} onEdit={(bm) => handleEdit(bm)} onDelete={() => handleDelete(bookmark)} />
+              ))}
+          </div>
         </div>
       </TooltipProvider>
     )
@@ -293,7 +300,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-grow">
           <Input
-            placeholder="Search bookmarks and folders..."
+            placeholder="Search bookmarks, folders, or tags..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"

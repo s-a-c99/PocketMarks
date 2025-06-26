@@ -147,7 +147,7 @@ function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
         if (item.type === 'folder') {
             html += `${indent}    <DT><H3>${item.title}</H3>\n`;
             html += bookmarksToHtml(item.children, indentLevel + 1);
-        } else {
+        } else if (item.type === 'bookmark') {
             html += `${indent}    <DT><A HREF="${item.url}">${item.title}</A>\n`;
         }
     });
