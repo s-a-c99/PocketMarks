@@ -11,12 +11,12 @@ export default async function BookmarksPage() {
 
   return (
     <main className="min-h-screen w-full bg-background text-foreground">
-      <header className="py-8 bg-card/50 border-b">
+      <header className="py-2 bg-card/50 border-b">
         <div className="container mx-auto">
             <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-5xl font-headline text-primary">PocketMarks</h1>
-                <p className="text-lg text-muted-foreground mt-2">Your personal space for all your favorite links.</p>
+              <div className="flex items-baseline gap-3">
+                <h1 className="text-xl font-headline text-primary">PocketMarks</h1>
+                <p className="text-xs text-muted-foreground hidden md:block">Your personal space for all your favorite links.</p>
               </div>
               <div className="flex items-center gap-2">
                 <ThemeToggle />
