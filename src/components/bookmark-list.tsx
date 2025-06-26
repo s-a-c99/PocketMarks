@@ -58,9 +58,7 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
                 acc.push({ ...item, children: matchingChildren });
             }
         } else if (item.type === 'bookmark') {
-            const urlMatch = item.url.toLowerCase().includes(lowerCaseTerm);
-            const tagMatch = item.tags?.some(tag => tag.toLowerCase().includes(lowerCaseTerm));
-            if (urlMatch || tagMatch) {
+            if (item.url.toLowerCase().includes(lowerCaseTerm)) {
               acc.push(item);
             }
         }
@@ -172,7 +170,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                         type: 'bookmark',
                         title: anchor.textContent || '',
                         url: anchor.getAttribute('href') || '',
-                        tags: [],
                     });
                 } else if (header) {
                     const nextDl = (node as HTMLElement).nextElementSibling;

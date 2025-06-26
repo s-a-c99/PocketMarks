@@ -3,7 +3,6 @@ export type Bookmark = {
   type: 'bookmark';
   title: string;
   url: string;
-  tags?: string[];
 };
 
 export type Folder = {

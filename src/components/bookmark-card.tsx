@@ -2,7 +2,6 @@
 
 import { Pencil, Trash2, ExternalLink } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -19,7 +18,7 @@ type BookmarkCardProps = {
 };
 
 export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) {
-  const { id, title, url, tags } = bookmark;
+  const { id, title, url } = bookmark;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -96,15 +95,6 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
             </TooltipContent>
           </Tooltip>
         </CardHeader>
-        {tags && tags.length > 0 && (
-            <div className="p-2 pt-0 flex flex-wrap gap-1">
-                {tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0.5">
-                        {tag}
-                    </Badge>
-                ))}
-            </div>
-        )}
       </Card>
     </TooltipProvider>
   );
