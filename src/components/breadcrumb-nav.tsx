@@ -16,15 +16,14 @@ export function BreadcrumbNav({ path, onNavigate }: BreadcrumbNavProps) {
         <Home className="h-4 w-4 mr-1" />
         Home
       </Button>
-      {path.map((folder, index) => (
+      {path.map((folder) => (
         <div key={folder.id} className="flex items-center">
           <ChevronRight className="h-4 w-4 mx-1" />
           <Button
-            variant={index === path.length - 1 ? "secondary" : "ghost"}
+            variant="ghost"
             size="sm"
             className="p-1 h-auto"
             onClick={() => onNavigate(folder.id)}
-            disabled={index === path.length - 1}
           >
             <span className="truncate max-w-xs">{folder.title}</span>
           </Button>

@@ -53,6 +53,43 @@
     "type": "folder",
     "title": "prova1",
     "createdAt": "2025-06-26T13:48:23.852Z",
-    "children": []
+    "children": [
+      {
+        "id": "67a0eebe-9437-420a-855a-251a2a784c3b",
+        "type": "bookmark",
+        "title": "abc",
+        "url": "https://esempio8.com",
+        "createdAt": "2025-06-26T14:20:50.877Z"
+      },
+      {
+        "id": "5d392c7b-aca3-4d3d-9c17-951278ca4ffd",
+        "type": "folder",
+        "title": "sotto-cartella",
+        "createdAt": "2025-06-26T14:21:17.171Z",
+        "children": [
+          {
+            "id": "c9eaa4c3-0e74-4100-9dc5-445367823982",
+            "type": "bookmark",
+            "title": "fgt",
+            "url": "https://esempio9.com",
+            "createdAt": "2025-06-26T14:21:36.887Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "6b7b6d1a-e0b4-4035-a8f9-3e1e6053b0de",
+    "type": "bookmark",
+    "title": "FREE TOOLS | OSINT Combine | NexusXplore",
+    "url": "https://www.osintcombine.com/tools",
+    "createdAt": "2025-06-26T09:46:33.000Z"
+  },
+  {
+    "id": "1d505572-0391-401b-b383-d88a475f8ddd",
+    "type": "bookmark",
+    "title": "World of Warships",
+    "url": "https://worldofwarships.eu/",
+    "createdAt": "2025-06-26T09:26:26.000Z"
   }
 ]

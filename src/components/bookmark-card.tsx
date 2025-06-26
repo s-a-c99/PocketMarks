@@ -30,7 +30,7 @@ export function BookmarkCard({ bookmark, status, onEdit, onDelete, isSelected, o
     <TooltipProvider delayDuration={300}>
       <Card className={cn(
         "transition-all hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between",
-        !isOk && "border-2 border-destructive bg-destructive/10"
+        !isOk && "border-2 border-destructive bg-destructive/10 ring-2 ring-destructive/50 ring-offset-2 ring-offset-background"
       )}>
         <CardHeader className="p-2 space-y-1">
           <div className="flex justify-between items-start gap-2">

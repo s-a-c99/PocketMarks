@@ -36,7 +36,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 
-function findItem(items: BookmarkItem[], itemId: string | null): BookmarkItem | undefined {
+function findItem(items: BookmarkItem[], itemId: string): BookmarkItem | undefined {
   if (!itemId) return undefined;
   for (const item of items) {
     if (item.id === itemId) return item;
@@ -48,13 +48,15 @@ function findItem(items: BookmarkItem[], itemId: string | null): BookmarkItem | 
   return undefined;
 }
 
-function findPath(items: BookmarkItem[], itemId: string, path: Folder[] = []): Folder[] | null {
+function findPath(items: BookmarkItem[], itemId: string, currentPath: Folder[] = []): Folder[] | null {
     for (const item of items) {
         if (item.id === itemId) {
-            return path;
+            // We found the item, but we need the path *to* it, which is the currentPath.
+            // The item itself will be part of the last breadcrumb, so we add it here.
+            return [...currentPath, item as Folder];
         }
         if (item.type === 'folder') {
-            const newPath = [...path, item];
+            const newPath = [...currentPath, item];
             const result = findPath(item.children, itemId, newPath);
             if (result) return result;
         }
@@ -182,45 +184,41 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       const parser = new DOMParser();
       const doc = parser.parseFromString(content, "text/html");
       
-      const parseHtmlBookmarks = (root: HTMLElement): BookmarkItem[] => {
+      // A more robust recursive parser for Netscape Bookmark File Format
+      const parseHtmlBookmarks = (root: Element | null): BookmarkItem[] => {
+          if (!root) return [];
           const items: BookmarkItem[] = [];
-          // A <DL> can contain <DT>s directly, or they can be wrapped in a <P>
-          const childrenContainer = root.querySelector(':scope > dl > p, :scope > dl') ?? root;
+          
+          // Find the <DL> element which is the direct child of the root.
+          const list = root.querySelector(':scope > DL');
+          if (!list) return [];
 
-          for (const node of Array.from(childrenContainer.children)) {
-              if (node.nodeName !== 'DT') continue;
+          // Iterate over direct children of the <DL>
+          for (const child of Array.from(list.children)) {
+            if (child.tagName !== 'DT') continue;
 
-              const anchor = node.querySelector('a');
-              const header = node.querySelector('h3');
+            const anchor = child.querySelector(':scope > A');
+            const header = child.querySelector(':scope > H3');
 
-              if (anchor) {
-                  items.push({
-                      id: uuidv4(),
-                      type: 'bookmark',
-                      title: anchor.textContent || '',
-                      url: anchor.getAttribute('href') || '',
-                      createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000).toISOString()
-                  });
-              } else if (header) {
-                  const nextDl = node.nextElementSibling;
-                  if (nextDl && nextDl.nodeName === 'DL') {
-                      items.push({
-                          id: uuidv4(),
-                          type: 'folder',
-                          title: header.textContent || '',
-                          children: parseHtmlBookmarks(nextDl as HTMLElement),
-                          createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
-                      });
-                  } else {
-                       items.push({
-                          id: uuidv4(),
-                          type: 'folder',
-                          title: header.textContent || '',
-                          children: [],
-                          createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
-                      });
-                  }
-              }
+            if (anchor) {
+              items.push({
+                id: uuidv4(),
+                type: 'bookmark',
+                title: anchor.textContent || '',
+                url: anchor.getAttribute('href') || '',
+                createdAt: new Date(parseInt(anchor.getAttribute('add_date') || '0') * 1000).toISOString()
+              });
+            } else if (header) {
+              // The folder's content is the next <DL> element
+              const nextDl = child.nextElementSibling;
+              items.push({
+                id: uuidv4(),
+                type: 'folder',
+                title: header.textContent || '',
+                children: nextDl && nextDl.tagName === 'DL' ? parseHtmlBookmarks(nextDl) : [],
+                createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000).toISOString()
+              });
+            }
           }
           return items;
       };
@@ -321,7 +319,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
   
   const handleSelectionChange = (itemId: string, checked: boolean) => {
-    const item = findItem(initialItems, itemId);
+    const item = findItem(currentItems, itemId); // Check within current items
     if (!item) return;
 
     const idsToChange = getDescendantIds(item);
@@ -339,16 +337,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   
   const handleNavigate = (folderId: string | null) => {
     if (folderId === currentFolderId) return;
-    if (folderId === null) {
-      setCurrentFolderId(null);
-    } else {
-      const item = findItem(initialItems, folderId);
-      if (item && item.type === 'folder') {
-        setCurrentFolderId(folderId);
-      }
-    }
+    setCurrentFolderId(folderId);
   };
-
+  
   const currentItems = useMemo(() => {
     if (!currentFolderId) return initialItems;
     const folder = findItem(initialItems, currentFolderId);
@@ -357,12 +348,16 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   
   const breadcrumbs = useMemo(() => {
     if (!currentFolderId) return [];
-    return findPath(initialItems, currentFolderId) || [];
+    const path = findPath(initialItems, currentFolderId);
+    // findPath now returns the full path including the current folder,
+    // so we remove it from the breadcrumbs for display purposes.
+    return path ? path.slice(0, -1) : [];
   }, [currentFolderId, initialItems]);
 
   const sortedItems = useMemo(() => {
     const itemsToSort = JSON.parse(JSON.stringify(currentItems));
     const sortFn = (a: BookmarkItem, b: BookmarkItem) => {
+      // Keep folders on top regardless of sort order
       if (a.type === 'folder' && b.type === 'bookmark') return -1;
       if (a.type === 'bookmark' && b.type === 'folder') return 1;
 
@@ -446,7 +441,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       <BreadcrumbNav path={breadcrumbs} onNavigate={handleNavigate} />
       
       {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-4">
           {filteredItems.map(item => (
             item.type === 'folder' ? (
               <FolderCard 
@@ -454,7 +449,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 folder={item} 
                 onEdit={handleEdit} 
                 onDelete={() => handleDelete(item)} 
-                onAddInFolder={handleAddNewBookmark}
+                onAddInFolder={() => handleNavigate(item.id)}
                 onNavigate={() => handleNavigate(item.id)}
                 isSelected={selectedIds.has(item.id)}
                 onSelectionChange={handleSelectionChange}
