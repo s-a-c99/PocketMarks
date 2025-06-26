@@ -304,30 +304,3 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
   await Promise.allSettled(tasks);
   return linkStatuses;
 }
-
-// Navigation helpers
-export function findItem(items: BookmarkItem[], itemId: string | null): BookmarkItem | undefined {
-  if (!itemId) return undefined;
-  for (const item of items) {
-    if (item.id === itemId) return item;
-    if (item.type === 'folder') {
-      const found = findItem(item.children, itemId);
-      if (found) return found;
-    }
-  }
-  return undefined;
-}
-
-export function findPath(items: BookmarkItem[], itemId: string, path: Folder[] = []): Folder[] | null {
-    for (const item of items) {
-        if (item.id === itemId) {
-            return path;
-        }
-        if (item.type === 'folder') {
-            const newPath = [...path, item];
-            const result = findPath(item.children, itemId, newPath);
-            if (result) return result;
-        }
-    }
-    return null;
-}

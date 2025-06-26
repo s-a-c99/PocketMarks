@@ -34,8 +34,33 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { findItem, findPath } from "@/lib/bookmark-service";
 
+
+function findItem(items: BookmarkItem[], itemId: string | null): BookmarkItem | undefined {
+  if (!itemId) return undefined;
+  for (const item of items) {
+    if (item.id === itemId) return item;
+    if (item.type === 'folder') {
+      const found = findItem(item.children, itemId);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+function findPath(items: BookmarkItem[], itemId: string, path: Folder[] = []): Folder[] | null {
+    for (const item of items) {
+        if (item.id === itemId) {
+            return path;
+        }
+        if (item.type === 'folder') {
+            const newPath = [...path, item];
+            const result = findPath(item.children, itemId, newPath);
+            if (result) return result;
+        }
+    }
+    return null;
+}
 
 function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
     if (!term) return items;
