@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -20,6 +21,7 @@ function SubmitButton() {
 
 export default function LoginPage() {
   const [state, formAction] = useFormState(login, undefined);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,9 +47,23 @@ export default function LoginPage() {
               <Label htmlFor="username">Username</Label>
               <Input id="username" name="username" type="text" required />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+              <Input 
+                id="password" 
+                name="password" 
+                type={showPassword ? "text" : "password"} 
+                required 
+                className="pr-10"
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-8 h-6 w-6 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-full w-auto" /> : <Eye className="h-full w-auto" />}
+              </button>
             </div>
             {state?.error && (
                 <p className="text-sm text-destructive">{state.error}</p>
