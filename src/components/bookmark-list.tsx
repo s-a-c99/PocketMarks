@@ -190,7 +190,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         const parser = new DOMParser();
         const doc = parser.parseFromString(content, "text/html");
 
-        // Industrial-strength parser for Netscape Bookmark File Format
         const parseDl = (dlElement: HTMLDListElement): BookmarkItem[] => {
             const items: BookmarkItem[] = [];
             const childElements = Array.from(dlElement.children);
@@ -202,24 +201,28 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                     continue;
                 }
 
-                // Check direct children for H3 or A tags
                 const header = child.querySelector(':scope > h3, :scope > H3');
                 const anchor = child.querySelector(':scope > a, :scope > A');
                 
                 if (header) {
-                    const nextElement = childElements[i + 1];
-                    let children: BookmarkItem[] = [];
-                    // The folder's content is in the very next DL element
-                    if (nextElement && nextElement.tagName === 'DL') {
-                        children = parseDl(nextElement as HTMLDListElement);
-                        i++; // We've processed the DL, so skip it in the next iteration
+                    let nextDl: HTMLDListElement | null = null;
+                    for (let j = i + 1; j < childElements.length; j++) {
+                        const nextChild = childElements[j];
+                        if (nextChild.tagName === 'DT') {
+                            break; 
+                        }
+                        if (nextChild.tagName === 'DL') {
+                            nextDl = nextChild as HTMLDListElement;
+                            i = j;
+                            break;
+                        }
                     }
                     
                     items.push({
                         id: uuidv4(),
                         type: 'folder',
                         title: header.textContent || 'Untitled Folder',
-                        children: children,
+                        children: nextDl ? parseDl(nextDl) : [],
                         createdAt: new Date(parseInt(header.getAttribute('add_date') || '0') * 1000 || Date.now()).toISOString()
                     });
                 } else if (anchor) {
@@ -235,7 +238,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             return items;
         };
         
-        // Find all top-level DLs in the body and parse them.
         const rootDLs = doc.body.querySelectorAll(':scope > dl, :scope > DL');
         const importedItems = Array.from(rootDLs).flatMap(dl => parseDl(dl as HTMLDListElement));
 
@@ -255,7 +257,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         }
     };
     reader.readAsText(file);
-    event.target.value = ''; // Reset input
+    event.target.value = '';
   };
 
 
@@ -334,7 +336,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
   
   const handleSelectionChange = (itemId: string, checked: boolean) => {
-    const item = findItem(currentItems, itemId); // Check within current items
+    const item = findItem(currentItems, itemId);
     if (!item) return;
 
     const idsToChange = getDescendantIds(item);
@@ -370,7 +372,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const sortedItems = useMemo(() => {
     const itemsToSort = JSON.parse(JSON.stringify(currentItems));
     const sortFn = (a: BookmarkItem, b: BookmarkItem) => {
-      // Keep folders on top regardless of sort order
       if (a.type === 'folder' && b.type === 'bookmark') return -1;
       if (a.type === 'bookmark' && b.type === 'folder') return 1;
 
