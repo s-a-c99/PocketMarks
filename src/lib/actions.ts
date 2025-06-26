@@ -6,9 +6,15 @@ import { cookies } from 'next/headers';
 const SESSION_COOKIE_NAME = 'pocketmarks_session';
 
 export async function login(prevState: { error: string } | undefined, formData: FormData) {
+  const username = formData.get('username');
   const password = formData.get('password');
 
-  if (password && password === process.env.POCKETMARKS_PASSWORD) {
+  if (
+    username &&
+    username === process.env.POCKETMARKS_USERNAME &&
+    password &&
+    password === process.env.POCKETMARKS_PASSWORD
+  ) {
     cookies().set(SESSION_COOKIE_NAME, 'true', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -17,7 +23,7 @@ export async function login(prevState: { error: string } | undefined, formData: 
     });
     return redirect('/bookmarks');
   } else {
-    return { error: 'Invalid password.' };
+    return { error: 'Invalid username or password.' };
   }
 }
 

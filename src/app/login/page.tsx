@@ -37,10 +37,14 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-headline text-primary">PocketMarks</CardTitle>
-          <CardDescription>Enter your password to access your bookmarks.</CardDescription>
+          <CardDescription>Enter your credentials to access your bookmarks.</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input id="username" name="username" type="text" required />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" required />
