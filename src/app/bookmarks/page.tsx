@@ -4,7 +4,8 @@ import { AppFooter } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions";
 import { getBookmarks } from "@/lib/bookmark-service";
-import { LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut } from "lucide-react";
+import Link from "next/link";
 
 export default async function BookmarksPage() {
   const bookmarks = await getBookmarks();
@@ -19,6 +20,11 @@ export default async function BookmarksPage() {
                 <p className="text-xs text-muted-foreground hidden md:block">Your personal space for all your favorite links.</p>
               </div>
               <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="icon" aria-label="Dashboard">
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="h-[1.2rem] w-[1.2rem]" />
+                  </Link>
+                </Button>
                 <ThemeToggle />
                 <form action={logout}>
                   <Button variant="outline" size="icon" type="submit" aria-label="Logout">
