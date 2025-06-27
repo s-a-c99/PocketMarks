@@ -4,6 +4,8 @@ PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utili
 
 <img src="https://placehold.co/800x400.png" data-ai-hint="app screenshot" alt="PocketMarks Screenshot" />
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2FYOUR_REPOSITORY&env=POCKETMARKS_USERNAME,POCKETMARKS_PASSWORD&envDescription=Enter%20your%20private%20credentials%20for%20your%20PocketMarks%20instance.&project-name=pocketmarks&repository-name=pocketmarks)
+
 ## Features
 
 - **Organize Your Links:** Create bookmarks and nested folders to keep your links organized.
@@ -31,40 +33,45 @@ PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utili
 
 ## Getting Started: Two Ways to Use PocketMarks
 
-You can use PocketMarks in two ways: locally on your computer for maximum privacy, or deployed on a free cloud service to access it from any device.
+You can use PocketMarks in two ways: deployed on a free cloud service to access it from any device, or locally on your computer for maximum privacy.
 
-### Option 1: Local Development (For Private Use on One Computer)
+### Option 1: Deploy to Vercel (Recommended - Easiest & Access from Anywhere)
+
+This is the recommended method for most users. It deploys your own **private copy** of the app to a free cloud service, Vercel. Your data is still yours and is not shared with anyone. This allows you to access your bookmarks from your phone, tablet, and other computers.
+
+**Just click the button below!**
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2FYOUR_REPOSITORY&env=POCKETMARKS_USERNAME,POCKETMARKS_PASSWORD&envDescription=Enter%20your%20private%20credentials%20for%20your%20PocketMarks%20instance.&project-name=pocketmarks&repository-name=pocketmarks)
+
+The deployment process is simple:
+1.  **Connect to Vercel:** You'll be prompted to sign up or log in to Vercel. Using your GitHub account is the easiest way. (A GitHub account is necessary because Vercel needs to create a private copy of the app's code for you).
+2.  **Configure Your Credentials:** Vercel will automatically ask for your **Environment Variables**. This is where you set your private `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`.
+3.  **Deploy:** Click the "Deploy" button. Vercel will build and deploy the app, giving you a public URL (e.g., `pocketmarks.vercel.app`). Only you can access it with the credentials you set.
+
+### Option 2: Local Development (For Private Use on One Computer)
 
 This method runs the app entirely on your machine. Your data never leaves your computer.
 
-1.  **Install Dependencies:** Open a terminal in the project's root directory and run:
+1.  **Download the Code:** Download the project files from this GitHub repository as a ZIP file.
+2.  **Install Dependencies:** Open a terminal in the project's root directory and run:
     ```bash
     npm install
     ```
 
-2.  **Set Up Credentials:** Create a new file named `.env.local` in the root of the project. This file will hold your private username and password. Add the following lines, replacing the example values:
+3.  **Set Up Credentials:** Create a new file named `.env.local` in the root of the project. This file will hold your private username and password. Add the following lines, replacing the example values:
     ```
     POCKETMARKS_USERNAME=user
     POCKETMARKS_PASSWORD=test1
     ```
     This file is included in `.gitignore` and will not be committed to your repository.
 
-3.  **Run the App:**
+4.  **Run the App:**
     ```bash
     npm run dev
     ```
 
-4.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
+5.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
     **Tip:** Bookmark this address in your browser for easy access!
-
-### Option 2: Deployment (Access from Anywhere via Vercel)
-
-This method deploys your own **private copy** of the app to a free cloud service, Vercel. Your data is still yours and is not shared with anyone. This is the recommended way to access your bookmarks from multiple devices (phone, tablet, etc.).
-
-1.  **Push to GitHub:** The easiest way to deploy to a service like Vercel is by using a Git repository. Create a free account on [GitHub](https://github.com) and push your project code there.
-2.  **Import to Vercel:** Sign up for [Vercel](https://vercel.com/) (you can use your GitHub account for a seamless setup) and import the PocketMarks repository.
-3.  **Configure Environment Variables:** During the import process, Vercel will ask for Environment Variables. This is the secure, cloud-based equivalent of the `.env.local` file. Add your `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD` here.
-4.  **Deploy:** Vercel will automatically build and deploy the app, giving you a public URL (e.g., `your-project-name.vercel.app`). Only you can access it with the credentials you set.
 
 ---
 
@@ -72,8 +79,8 @@ This method deploys your own **private copy** of the app to a free cloud service
 
 Since this is a self-hosted application, there is no traditional "forgot password" feature that sends emails. Your credentials are saved directly by you.
 
+-   **For Vercel setups:** If you forget your password, log in to your Vercel account, navigate to your project's settings, and view or change the Environment Variables you set during setup.
 -   **For local setups:** If you forget your password, simply open the `.env.local` file on your computer to see it.
--   **For deployed setups (like Vercel):** If you forget your password, log in to your Vercel account, navigate to your project's settings, and view the Environment Variables you set.
 
 ### Privacy and Anonymity
 
