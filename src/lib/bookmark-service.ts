@@ -139,55 +139,56 @@ function getAllUrls(items: BookmarkItem[], urlSet: Set<string> = new Set()): Set
 }
 
 const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
-    let items: BookmarkItem[] = [];
-    // Find direct child <DL>, which contains the list
-    const dl = Array.from(root.children).find(el => el.tagName === 'DL');
-    if (!dl) return items;
+  const items: BookmarkItem[] = [];
+  
+  // Directly select <DT> elements that are children of the first <DL> within the root.
+  // This is a more robust way to find the list of items.
+  const listItems = root.querySelectorAll(':scope > dl > dt');
 
-    // Iterate over <DT> elements inside the <DL>
-    for (const child of Array.from(dl.children)) {
-        if (child.tagName === 'DT') {
-            const a = child.querySelector('a');
-            const h3 = child.querySelector('h3');
-            
-            const add_date_attr = a?.getAttribute('add_date') || h3?.getAttribute('add_date');
-            const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
-            const createdAt = new Date(add_date).toISOString();
+  for (const item of Array.from(listItems)) {
+    const anchor = item.querySelector(':scope > a');
+    const header = item.querySelector(':scope > h3');
 
-            if (h3) { // It's a folder
-              // The folder's content is in the next <DL> element
-              const folderDl = child.nextElementSibling;
-              const children = folderDl && folderDl.tagName === 'DL' ? parseBookmarksRecursive(folderDl) : [];
-              items.push({
-                id: uuidv4(),
-                type: 'folder',
-                title: h3.textContent || 'Untitled Folder',
-                children: children,
-                createdAt: createdAt,
-              });
-            } else if (a) { // It's a bookmark
-              const url = a.getAttribute('href');
-              const title = a.textContent || 'Untitled Bookmark';
-              if (url) {
-                items.push({
-                  id: uuidv4(),
-                  type: 'bookmark',
-                  title: title,
-                  url: url,
-                  createdAt: createdAt,
-                });
-              }
-            }
-        }
+    const add_date_attr = anchor?.getAttribute('add_date') || header?.getAttribute('add_date');
+    const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
+    const createdAt = new Date(add_date).toISOString();
+
+    if (header) { // It's a folder. The children are in a <DL> nested within the same <DT>.
+      const children = parseBookmarksRecursive(item);
+      items.push({
+        id: uuidv4(),
+        type: 'folder',
+        title: header.textContent || 'Untitled Folder',
+        children: children,
+        createdAt: createdAt,
+      });
+    } else if (anchor) { // It's a bookmark.
+      const url = anchor.getAttribute('href');
+      const title = anchor.textContent || 'Untitled Bookmark';
+      if (url) {
+        items.push({
+          id: uuidv4(),
+          type: 'bookmark',
+          title: title,
+          url: url,
+          createdAt: createdAt,
+        });
+      }
     }
-    return items;
+  }
+  return items;
 };
 
 export async function parseBookmarks(fileContent: string): Promise<BookmarkItem[]> {
     const { JSDOM } = await import('jsdom');
     const dom = new JSDOM(fileContent);
     const doc = dom.window.document;
-    return parseBookmarksRecursive(doc.body);
+    
+    // Find the main H1 tag, which usually precedes the main list. Start parsing from its parent.
+    const mainHeader = doc.querySelector('h1');
+    const rootElement = mainHeader ? mainHeader.parentElement : doc.body;
+
+    return parseBookmarksRecursive(rootElement || doc.body);
 }
 
 export async function parseAndCompareBookmarks(fileContent: string): Promise<BookmarkItem[]> {
