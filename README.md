@@ -38,27 +38,37 @@ This application is designed to run locally on your computer for maximum privacy
     ```bash
     npm install
     ```
-
 3.  **Set Up Credentials:** Create a new file named `.env.local` in the root of the project. This file will hold your private username and password. Add the following lines, replacing the example values:
     ```
     POCKETMARKS_USERNAME=user
     POCKETMARKS_PASSWORD=test1
     ```
     This file is included in `.gitignore` and will not be committed to your repository.
-
 4.  **Run the App:**
     ```bash
     npm run dev
     ```
-
 5.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
     **Tip:** Bookmark this address in your browser for easy access!
 
----
+## The Self-Hosted Way: Using Across Devices
+
+The core philosophy of PocketMarks is **total user control**. This means no cloud servers, no data synchronization hidden in the background. You own your data, and you decide where it goes.
+
+The idea of synchronizing manually via import/export of HTML files is the essence of true self-hosting. If you want to have the same set of bookmarks on different computers (e.g., a laptop and a desktop), you can follow this simple, manual, and ultra-secure process:
+
+1.  **Install PocketMarks:** Follow the "Getting Started" guide to install a separate copy of PocketMarks on each device you want to use.
+2.  **Export from Your Main Device:** On the device that has the most up-to-date bookmarks, use the **Export** function to download a single HTML file containing all your links. The order of the bookmarks will be preserved.
+3.  **Transfer the File:** Move this HTML file to your other device. You can use a USB stick, send it to yourself via a private email, or any method you trust.
+4.  **Import on the Second Device:** On the second device, open PocketMarks and use the **Import** function. It's best to use the **"Replace from file..."** option to ensure the bookmarks are perfectly identical to your main device.
+
+This manual process guarantees that your data is never stored on a third-party server, giving you unparalleled privacy and control over your digital life.
 
 ### A Note on Passwords and Recovery
 
-Since this is a self-hosted application that runs on your machine, there is no traditional "forgot password" feature that sends emails. If you forget your password, simply open the `.env.local` file on your computer to see what you set.
+Since this is a self-hosted application that runs entirely on your machine, there is no traditional "forgot password" feature that sends emails. This is intentional to maximize your privacy.
+
+If you forget your password, simply open the `.env.local` file on your computer to see what you set. You are in full control.
 
 ### Privacy and Anonymity
 
