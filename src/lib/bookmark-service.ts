@@ -128,60 +128,62 @@ export async function overwriteBookmarks(items: BookmarkItem[]): Promise<void> {
 }
 
 function normalizeUrl(url: string): string {
-    return url.trim().replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '');
+    try {
+        const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+        return (urlObj.hostname.replace(/^www\./, '') + urlObj.pathname).replace(/\/$/, '');
+    } catch (e) {
+        return url.trim().replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '');
+    }
 }
 
-function getAllUrls(items: BookmarkItem[], urlSet: Set<string> = new Set()): Set<string> {
+
+function getAllUrls(items: BookmarkItem[], urlMap: Map<string, string> = new Map()): Map<string, string> {
     for (const item of items) {
         if (item.type === 'bookmark') {
-            urlSet.add(normalizeUrl(item.url));
+            urlMap.set(normalizeUrl(item.url), item.id);
         } else if (item.type === 'folder') {
-            getAllUrls(item.children, urlSet);
+            getAllUrls(item.children, urlMap);
         }
     }
-    return urlSet;
+    return urlMap;
 }
 
 const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
   const items: BookmarkItem[] = [];
   
-  // Find direct child DL > DT from the root element
-  const list = root.querySelector(':scope > DL');
-  if (!list) return items;
+  for (const child of Array.from(root.children)) {
+      if (child.tagName === 'DT') {
+          const anchor = child.querySelector(':scope > A');
+          const header = child.querySelector(':scope > H3');
+          
+          const add_date_attr = anchor?.getAttribute('ADD_DATE') || header?.getAttribute('ADD_DATE');
+          const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
+          const createdAt = new Date(add_date).toISOString();
 
-  // Iterate through each direct child DT of the DL
-  for (const item of Array.from(list.children)) {
-    if (item.tagName !== 'DT') continue;
-
-    const anchor = item.querySelector(':scope > A');
-    const header = item.querySelector(':scope > H3');
-
-    const add_date_attr = anchor?.getAttribute('ADD_DATE') || header?.getAttribute('ADD_DATE');
-    const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
-    const createdAt = new Date(add_date).toISOString();
-
-    if (header) { 
-      const children = parseBookmarksRecursive(item);
-      items.push({
-        id: uuidv4(),
-        type: 'folder',
-        title: header.textContent || 'Untitled Folder',
-        children: children,
-        createdAt: createdAt,
-      });
-    } else if (anchor) {
-      const url = anchor.getAttribute('HREF');
-      const title = anchor.textContent || 'Untitled Bookmark';
-      if (url) {
-        items.push({
-          id: uuidv4(),
-          type: 'bookmark',
-          title: title,
-          url: url,
-          createdAt: createdAt,
-        });
+          if (header) {
+              const sublist = child.querySelector(':scope > DL');
+              const children = sublist ? parseBookmarksRecursive(sublist) : [];
+              items.push({
+                  id: uuidv4(),
+                  type: 'folder',
+                  title: header.textContent || 'Untitled Folder',
+                  children: children,
+                  createdAt: createdAt,
+              });
+          } else if (anchor) {
+              const url = anchor.getAttribute('HREF');
+              const title = anchor.textContent || 'Untitled Bookmark';
+              if (url) {
+                  items.push({
+                      id: uuidv4(),
+                      type: 'bookmark',
+                      title: title,
+                      url: url,
+                      createdAt: createdAt,
+                  });
+              }
+          }
       }
-    }
   }
   return items;
 };
@@ -189,9 +191,9 @@ const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
 export async function parseBookmarks(fileContent: string): Promise<BookmarkItem[]> {
     const dom = new JSDOM(fileContent);
     const doc = dom.window.document;
-    const mainHeader = doc.querySelector('h1');
-    const rootElement = mainHeader ? mainHeader.parentElement : doc.body;
-    return parseBookmarksRecursive(rootElement || doc.body);
+    const list = doc.querySelector('DL');
+    if (!list) return [];
+    return parseBookmarksRecursive(list);
 }
 
 export async function parseAndCompareBookmarks(fileContent: string): Promise<BookmarkItem[]> {
@@ -223,19 +225,22 @@ export async function parseAndCompareBookmarks(fileContent: string): Promise<Boo
 export async function mergeBookmarks(itemsToMerge: BookmarkItem[]): Promise<void> {
     noStore();
     const existingBookmarks = await readBookmarksFile();
+    const existingUrls = getAllUrls(existingBookmarks);
 
     const mergeRecursive = (target: BookmarkItem[], source: BookmarkItem[]) => {
         for (const sourceItem of source) {
-            if (sourceItem.type === 'folder') {
+            if (sourceItem.type === 'bookmark') {
+                if (!existingUrls.has(normalizeUrl(sourceItem.url))) {
+                    target.push(sourceItem);
+                }
+            } else if (sourceItem.type === 'folder') {
                 let targetFolder = target.find(t => t.type === 'folder' && t.title === sourceItem.title) as Folder | undefined;
                 if (!targetFolder) {
-                    const newFolder = { ...sourceItem, children: [] };
+                    const newFolder: Folder = { ...sourceItem, children: [] };
                     target.push(newFolder);
                     targetFolder = newFolder;
                 }
                 mergeRecursive(targetFolder.children, sourceItem.children);
-            } else {
-                target.push(sourceItem);
             }
         }
     };
@@ -253,8 +258,9 @@ function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
         if (item.type === 'folder') {
             html += `${indent}    <DT><H3 ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}">${item.title}</H3>\n`;
             html += bookmarksToHtml(item.children, indentLevel + 1);
+            html += `${indent}    </DT>\n`;
         } else if (item.type === 'bookmark') {
-            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}">${item.title}</A>\n`;
+            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}">${item.title}</A></DT>\n`;
         }
     });
 
@@ -333,17 +339,27 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
         tasks.push((async () => {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            
+            const initialUrl = new URL(item.url);
+
             const response = await fetch(item.url, { 
                 signal: controller.signal, 
-                redirect: 'follow',
+                redirect: 'follow', // follow redirects
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5'
                 }
             });
             clearTimeout(timeoutId);
 
-            if (response.status >= 200 && response.status < 400) {
+            const finalUrl = new URL(response.url);
+
+            // Check for ISP or captive portal redirects for non-existent domains
+            if (response.ok && response.redirected && initialUrl.hostname !== finalUrl.hostname) {
+                 linkStatuses[item.id] = 'Dead';
+            } else if (response.ok) {
               linkStatuses[item.id] = 'ok';
             } else {
               linkStatuses[item.id] = `Error (${response.status})`;

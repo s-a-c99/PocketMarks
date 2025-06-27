@@ -149,7 +149,7 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
                       <FormItem>
                       <FormLabel>URL</FormLabel>
                       <FormControl>
-                          <Input placeholder="https://example.com" {...field} />
+                          <Input placeholder="example.com" {...field} />
                       </FormControl>
                       <FormMessage />
                       </FormItem>
