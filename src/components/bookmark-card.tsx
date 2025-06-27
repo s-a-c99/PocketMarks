@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2, ExternalLink, ShieldAlert } from "lucide-react";
+import { Pencil, Trash2, ExternalLink, ShieldAlert, Star } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,12 +18,13 @@ type BookmarkCardProps = {
   status?: string;
   onEdit: (bookmark: Bookmark) => void;
   onDelete: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, checked: boolean) => void;
 };
 
-export function BookmarkCard({ bookmark, status, onEdit, onDelete, isSelected, onSelectionChange }: BookmarkCardProps) {
-  const { id, title, url } = bookmark;
+export function BookmarkCard({ bookmark, status, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange }: BookmarkCardProps) {
+  const { id, title, url, isFavorite } = bookmark;
   const isOk = !status || status === 'ok';
 
   return (
@@ -79,6 +80,14 @@ export function BookmarkCard({ bookmark, status, onEdit, onDelete, isSelected, o
                 </TooltipTrigger>
                 <TooltipContent><p>Open in new tab</p></TooltipContent>
              </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onToggleFavorite(id)}>
+                        <Star className={cn("h-4 w-4", isFavorite ? "text-primary fill-current" : "text-muted-foreground")} />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p></TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

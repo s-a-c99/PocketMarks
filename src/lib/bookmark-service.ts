@@ -2,7 +2,7 @@
 import 'server-only';
 import fs from 'fs/promises';
 import path from 'path';
-import type { BookmarkItem, Folder } from '@/types';
+import type { BookmarkItem, Folder, Bookmark } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -120,6 +120,15 @@ export async function saveItem(itemToSave: BookmarkItem, parentId: string | null
 export async function deleteItem(id: string): Promise<void> {
   let bookmarks = await readBookmarksFile();
   bookmarks = deleteItemRecursive(bookmarks, id);
+  await writeBookmarksFile(bookmarks);
+}
+
+export async function toggleFavoriteStatus(id: string): Promise<void> {
+  const bookmarks = await readBookmarksFile();
+  findAndMutate(bookmarks, (item) => item.id === id && item.type === 'bookmark', (items, index) => {
+      const bookmark = items[index] as Bookmark;
+      bookmark.isFavorite = !bookmark.isFavorite;
+  });
   await writeBookmarksFile(bookmarks);
 }
 
@@ -259,7 +268,7 @@ function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
             html += bookmarksToHtml(item.children, indentLevel + 1);
             html += `${indent}    </DT>\n`;
         } else if (item.type === 'bookmark') {
-            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}">${item.title}</A></DT>\n`;
+            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}" ${item.isFavorite ? 'ICON="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABeklEQVQ4y6WTv2vUYRzFP/e9u5v9uF0T0k2iSJGiQ0Mdd3FwUFP/gI6uro4uCg5OLlJw8C9QcHRydBM6dLAgWkrQP0DRZAmKXWzCzb3J3d3L3e4/5/D7fT7f7/f9fnkR/pI+qU6U9HPS/An0f03xS6bTqXRyYlOVSjVV4Uu1i+5wIM/z+TqZTPYwW5qAsW5gqA94q4vValVfENVEcUnEMdM0jZ2WAdVqNQU4M4E4M8GzLMs23RNKIMvyt4E0wRSRhJvQvQnETwLzXwTzI5IgyxZ/3AFbmkDGcf6hGDAunt0g3N7ePuL5/uprA0wNMOViOaA4EZmZ4G2l1TqM50xQxvGfqmI3jC0AisGkCdb7DwezwbA8+deE8wP9g64Qz88MhF7DsA/LFv/dAdmWeeA8wfbA8xbwFqB+fV7s2AnkUqmVj8NxT4PXIunvQPoJ6P8L8L9i+puAWL9WqsUaP/8cBSaZm6Y5n46S5f3AWRb/nQIWmRPLkP5gOm9SfZ3s5p9zPByfAXnWPf4e+BRqL/xS6ZSpfufqf0A+A5bJ5DkMsNxzLgAAAABJRU5ErkJggg=="' : ''}>${item.title}</A></DT>\n`;
         }
     });
 
@@ -336,24 +345,25 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
     for (const item of items) {
       if (item.type === 'bookmark') {
         tasks.push((async () => {
+          let finalUrl: string | undefined;
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
             const response = await fetch(item.url, { 
                 signal: controller.signal, 
-                redirect: 'follow',
-                headers: {
+                redirect: 'follow', // follow redirects
+                headers: { // Use a common user-agent
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.5'
                 }
             });
             clearTimeout(timeoutId);
-
-            // A link is only definitively dead if it returns a 404.
-            // Other errors (403, 5xx, etc.) can be temporary or due to bot blocking.
-            // To avoid false positives, we treat them as 'ok'.
+            finalUrl = response.url;
+            
+            // Only a 404 is a definitive "dead link". Other errors can be temporary.
+            // This is a conservative approach to avoid false positives.
             if (response.status === 404) {
               linkStatuses[item.id] = `Error (404)`;
             } else {

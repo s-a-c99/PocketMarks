@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown, Search } from "lucide-react";
+import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown, Search, Star } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
-import type { BookmarkItem, Folder } from "@/types";
+import type { BookmarkItem, Folder, Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
 import { FolderCard } from "./folder-card";
 import { ItemDialog } from "./item-dialog";
@@ -20,6 +20,7 @@ import {
   exportBookmarksAction,
   exportSelectedBookmarksAction,
   checkDeadLinksAction,
+  toggleFavoriteAction,
 } from "@/lib/actions";
 import {
   AlertDialog,
@@ -40,6 +41,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { DuplicateDialog } from "./duplicate-dialog";
+
 
 // Helper functions for navigation
 const findItem = (items: BookmarkItem[], id: string): BookmarkItem | undefined => {
@@ -68,6 +71,11 @@ const findPath = (items: BookmarkItem[], id: string): Folder[] => {
 
 function sortItems(items: BookmarkItem[], sortBy: string): BookmarkItem[] {
   const sorted = [...items].sort((a, b) => {
+    // Favorites always on top
+    if (a.type === 'bookmark' && a.isFavorite && (b.type !== 'bookmark' || !b.isFavorite)) return -1;
+    if (b.type === 'bookmark' && b.isFavorite && (a.type !== 'bookmark' || !a.isFavorite)) return 1;
+
+    // Folders before bookmarks (if not favorite)
     if (a.type === 'folder' && b.type !== 'folder') return -1;
     if (a.type !== 'folder' && b.type === 'folder') return 1;
 
@@ -105,7 +113,12 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
       
       if (item.type === 'folder') {
         const childrenResults = searchRecursive(item.children);
-        found.push(...childrenResults);
+        // If the folder itself matches, add it and all its children. Otherwise, add only matching children.
+        if (titleMatch) {
+            found.push(item);
+        } else {
+            found.push(...childrenResults);
+        }
       } else if (titleMatch || urlMatch) {
         found.push(item);
       }
@@ -132,6 +145,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [pendingImportData, setPendingImportData] = useState<BookmarkItem[] | null>(null);
   const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
   const [itemsToCompare, setItemsToCompare] = useState<BookmarkItem[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [pendingItem, setPendingItem] = useState<Omit<Bookmark, 'id' | 'children' | 'createdAt'> | null>(null);
+
 
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [linkStatuses, setLinkStatuses] = useState<Record<string, string>>({});
@@ -209,6 +225,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
           title: `${itemToSave.type.charAt(0).toUpperCase() + itemToSave.type.slice(1)} ${isEditing ? 'updated' : 'added'}`,
           description: `"${itemToSave.title}" has been saved.`
         });
+        setIsDialogOpen(false);
       });
     });
   };
@@ -394,6 +411,29 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     };
     return findRecursive(items);
   };
+
+  const handleDialogSubmit = (values: Omit<BookmarkItem, 'id' | 'children' | 'createdAt'>) => {
+    if (values.type === 'bookmark' && !itemToEdit && checkForDuplicate(values.url)) {
+        setPendingItem(values as Omit<Bookmark, 'id' | 'children'| 'createdAt'>);
+        setShowDuplicateDialog(true);
+        return;
+    }
+    handleSaveItem(values);
+  };
+
+  const handleConfirmDuplicate = () => {
+      if(pendingItem) {
+          handleSaveItem(pendingItem);
+      }
+      setShowDuplicateDialog(false);
+      setPendingItem(null);
+  }
+
+  const handleToggleFavorite = (id: string) => {
+    startTransition(() => {
+        toggleFavoriteAction(id);
+    });
+  }
   
   return (
     <div className="w-full">
@@ -479,6 +519,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                             status={linkStatuses[item.id]}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
+                            onToggleFavorite={handleToggleFavorite}
                             isSelected={selectedIds.has(item.id)}
                             onSelectionChange={handleSelectionChange}
                         />
@@ -499,10 +540,17 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       <ItemDialog
         isOpen={isDialogOpen}
         setIsOpen={setIsDialogOpen}
-        onItemSaved={handleSaveItem}
+        onItemSaved={handleDialogSubmit}
         itemToEdit={itemToEdit}
-        onCheckForDuplicate={checkForDuplicate}
       />
+      <DuplicateDialog
+        isOpen={showDuplicateDialog}
+        onCancel={() => {
+            setShowDuplicateDialog(false);
+            setPendingItem(null);
+        }}
+        onConfirm={handleConfirmDuplicate}
+       />
       <PasswordConfirmationDialog
         isOpen={isPasswordDialogOpen}
         setIsOpen={setIsPasswordDialogOpen}

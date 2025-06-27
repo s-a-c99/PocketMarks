@@ -13,7 +13,8 @@ import {
   createBackup,
   checkAllLinks,
   parseAndCompareBookmarks,
-  parseBookmarks
+  parseBookmarks,
+  toggleFavoriteStatus
 } from './bookmark-service';
 import type { BookmarkItem } from '@/types';
 
@@ -125,4 +126,9 @@ export async function exportSelectedBookmarksAction(ids: string[]): Promise<stri
 
 export async function checkDeadLinksAction(): Promise<Record<string, string>> {
   return await checkAllLinks();
+}
+
+export async function toggleFavoriteAction(id: string) {
+    await toggleFavoriteStatus(id);
+    revalidatePath('/bookmarks');
 }
