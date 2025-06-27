@@ -1,10 +1,8 @@
 # PocketMarks - Your Personal Bookmark Hub
 
-PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utility designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage your bookmarks, organize them into folders, and keep your collection tidy and up-to-date.
+PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utility designed for users who want full control over their data. It runs entirely on your own computer, ensuring that your bookmarks are never sent to a third-party server. It provides a clean, fast, and modern interface to manage your bookmarks, organize them into folders, and keep your collection tidy and up-to-date.
 
 <img src="https://placehold.co/800x400.png" data-ai-hint="app screenshot" alt="PocketMarks Screenshot" />
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2FYOUR_REPOSITORY&env=POCKETMARKS_USERNAME,POCKETMARKS_PASSWORD&envDescription=Enter%20your%20private%20credentials%20for%20your%20PocketMarks%20instance.&project-name=pocketmarks&repository-name=pocketmarks)
 
 ## Features
 
@@ -31,26 +29,9 @@ PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utili
 
 ---
 
-## Getting Started: Two Ways to Use PocketMarks
+## Getting Started
 
-You can use PocketMarks in two ways: deployed on a free cloud service to access it from any device, or locally on your computer for maximum privacy.
-
-### Option 1: Deploy to Vercel (Recommended - Easiest & Access from Anywhere)
-
-This is the recommended method for most users. It deploys your own **private copy** of the app to a free cloud service, Vercel. Your data is still yours and is not shared with anyone. This allows you to access your bookmarks from your phone, tablet, and other computers.
-
-**Just click the button below!**
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2FYOUR_REPOSITORY&env=POCKETMARKS_USERNAME,POCKETMARKS_PASSWORD&envDescription=Enter%20your%20private%20credentials%20for%20your%20PocketMarks%20instance.&project-name=pocketmarks&repository-name=pocketmarks)
-
-The deployment process is simple:
-1.  **Connect to Vercel:** You'll be prompted to sign up or log in to Vercel. Using your GitHub account is the easiest way. (A GitHub account is necessary because Vercel needs to create a private copy of the app's code for you).
-2.  **Configure Your Credentials:** Vercel will automatically ask for your **Environment Variables**. This is where you set your private `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`.
-3.  **Deploy:** Click the "Deploy" button. Vercel will build and deploy the app, giving you a public URL (e.g., `pocketmarks.vercel.app`). Only you can access it with the credentials you set.
-
-### Option 2: Local Development (For Private Use on One Computer)
-
-This method runs the app entirely on your machine. Your data never leaves your computer.
+This application is designed to run locally on your computer for maximum privacy and control. Your data never leaves your machine.
 
 1.  **Download the Code:** Download the project files from this GitHub repository as a ZIP file.
 2.  **Install Dependencies:** Open a terminal in the project's root directory and run:
@@ -77,16 +58,13 @@ This method runs the app entirely on your machine. Your data never leaves your c
 
 ### A Note on Passwords and Recovery
 
-Since this is a self-hosted application, there is no traditional "forgot password" feature that sends emails. Your credentials are saved directly by you.
-
--   **For Vercel setups:** If you forget your password, log in to your Vercel account, navigate to your project's settings, and view or change the Environment Variables you set during setup.
--   **For local setups:** If you forget your password, simply open the `.env.local` file on your computer to see it.
+Since this is a self-hosted application that runs on your machine, there is no traditional "forgot password" feature that sends emails. If you forget your password, simply open the `.env.local` file on your computer to see what you set.
 
 ### Privacy and Anonymity
 
-Since this is a self-hosted application that runs entirely on your machine or your private instance, it is inherently private.
+Since this is a self-hosted application that runs entirely on your machine, it is inherently private.
 - **VPN:** It works perfectly with any VPN.
-- **Tor Browser:** You can access your local server or deployed instance via Tor Browser without any issues.
+- **Tor Browser:** You can access your local server via Tor Browser without any issues.
 - **No External Calls:** The application makes no external API calls, except for the "Dead Link Checker" feature, which must contact website domains to verify their status. All bookmark data is stored in the `bookmarks.json` file and is never sent to a third party.
 
 ## Support the Project
