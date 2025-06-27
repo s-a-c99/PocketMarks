@@ -177,5 +177,12 @@
       }
     ],
     "createdAt": "2025-05-17T21:53:25.000Z"
+  },
+  {
+    "id": "31dff3e8-3a4e-482a-9a1d-45d7bb593ad5",
+    "type": "bookmark",
+    "title": "dhsd",
+    "url": "https://www.fare.com",
+    "createdAt": "2025-06-27T09:18:37.557Z"
   }
 ]

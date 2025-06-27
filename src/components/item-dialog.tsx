@@ -16,15 +16,23 @@ const formSchema = z.object({
   type: z.enum(["bookmark", "folder"]),
   title: z.string().min(1, "Title is required."),
   url: z.string().optional(),
-}).refine(data => {
+})
+.transform((data) => {
+    if (data.type === 'bookmark' && data.url && !/^(https?|ftp):\/\//i.test(data.url)) {
+        return { ...data, url: `https://${data.url}` };
+    }
+    return data;
+})
+.refine(data => {
     if (data.type === 'bookmark') {
-        return !!data.url && z.string().url().safeParse(data.url).success;
+        return z.string().url({ message: "Invalid URL format." }).safeParse(data.url).success;
     }
     return true;
 }, {
     message: "Please enter a valid URL for a bookmark.",
     path: ["url"],
 });
+
 
 type ItemDialogProps = {
   isOpen: boolean;

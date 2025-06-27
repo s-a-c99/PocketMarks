@@ -6,6 +6,7 @@ import type { BookmarkItem, Folder } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import { unstable_noStore as noStore } from 'next/cache';
+import { JSDOM } from 'jsdom';
 
 const bookmarksFilePath = path.join(process.cwd(), 'bookmarks.json');
 const backupsDir = path.join(process.cwd(), 'backups');
@@ -126,11 +127,14 @@ export async function overwriteBookmarks(items: BookmarkItem[]): Promise<void> {
     await writeBookmarksFile(items);
 }
 
+function normalizeUrl(url: string): string {
+    return url.trim().replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '');
+}
+
 function getAllUrls(items: BookmarkItem[], urlSet: Set<string> = new Set()): Set<string> {
     for (const item of items) {
         if (item.type === 'bookmark') {
-            const normalizedUrl = item.url.trim().replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-            urlSet.add(normalizedUrl);
+            urlSet.add(normalizeUrl(item.url));
         } else if (item.type === 'folder') {
             getAllUrls(item.children, urlSet);
         }
@@ -141,19 +145,22 @@ function getAllUrls(items: BookmarkItem[], urlSet: Set<string> = new Set()): Set
 const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
   const items: BookmarkItem[] = [];
   
-  // Directly select <DT> elements that are children of the first <DL> within the root.
-  // This is a more robust way to find the list of items.
-  const listItems = root.querySelectorAll(':scope > dl > dt');
+  // Find direct child DL > DT from the root element
+  const list = root.querySelector(':scope > DL');
+  if (!list) return items;
 
-  for (const item of Array.from(listItems)) {
-    const anchor = item.querySelector(':scope > a');
-    const header = item.querySelector(':scope > h3');
+  // Iterate through each direct child DT of the DL
+  for (const item of Array.from(list.children)) {
+    if (item.tagName !== 'DT') continue;
 
-    const add_date_attr = anchor?.getAttribute('add_date') || header?.getAttribute('add_date');
+    const anchor = item.querySelector(':scope > A');
+    const header = item.querySelector(':scope > H3');
+
+    const add_date_attr = anchor?.getAttribute('ADD_DATE') || header?.getAttribute('ADD_DATE');
     const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
     const createdAt = new Date(add_date).toISOString();
 
-    if (header) { // It's a folder. The children are in a <DL> nested within the same <DT>.
+    if (header) { 
       const children = parseBookmarksRecursive(item);
       items.push({
         id: uuidv4(),
@@ -162,8 +169,8 @@ const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
         children: children,
         createdAt: createdAt,
       });
-    } else if (anchor) { // It's a bookmark.
-      const url = anchor.getAttribute('href');
+    } else if (anchor) {
+      const url = anchor.getAttribute('HREF');
       const title = anchor.textContent || 'Untitled Bookmark';
       if (url) {
         items.push({
@@ -180,14 +187,10 @@ const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
 };
 
 export async function parseBookmarks(fileContent: string): Promise<BookmarkItem[]> {
-    const { JSDOM } = await import('jsdom');
     const dom = new JSDOM(fileContent);
     const doc = dom.window.document;
-    
-    // Find the main H1 tag, which usually precedes the main list. Start parsing from its parent.
     const mainHeader = doc.querySelector('h1');
     const rootElement = mainHeader ? mainHeader.parentElement : doc.body;
-
     return parseBookmarksRecursive(rootElement || doc.body);
 }
 
@@ -200,8 +203,7 @@ export async function parseAndCompareBookmarks(fileContent: string): Promise<Boo
     const filterNewRecursive = (items: BookmarkItem[]): BookmarkItem[] => {
         return items.reduce((acc, item) => {
             if (item.type === 'bookmark') {
-                const normalizedUrl = item.url.trim().replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-                if (!existingUrls.has(normalizedUrl)) {
+                if (!existingUrls.has(normalizeUrl(item.url))) {
                     acc.push(item);
                 }
             } else if (item.type === 'folder') {
@@ -332,7 +334,13 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
-            const response = await fetch(item.url, { signal: controller.signal, redirect: 'follow' });
+            const response = await fetch(item.url, { 
+                signal: controller.signal, 
+                redirect: 'follow',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
+                }
+            });
             clearTimeout(timeoutId);
 
             if (response.status >= 200 && response.status < 400) {
