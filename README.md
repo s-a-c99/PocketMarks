@@ -2,7 +2,7 @@
 
 PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utility designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage your bookmarks, organize them into folders, and keep your collection tidy and up-to-date.
 
-![PocketMarks Screenshot](https://placehold.co/800x400.png?text=PocketMarks+App+Screenshot)
+<img src="https://placehold.co/800x400.png" data-ai-hint="app screenshot" alt="PocketMarks Screenshot" />
 
 ## Features
 
@@ -61,8 +61,8 @@ This method runs the app entirely on your machine. Your data never leaves your c
 
 This method deploys your own **private copy** of the app to a free cloud service, Vercel. Your data is still yours and is not shared with anyone. This is the recommended way to access your bookmarks from multiple devices (phone, tablet, etc.).
 
-1.  **Push to GitHub:** Make sure your project is on a **GitHub repository**. Vercel requires this to import your code.
-2.  **Import to Vercel:** Sign up for [Vercel](https://vercel.com/) with your GitHub account and import the PocketMarks repository.
+1.  **Push to GitHub:** The easiest way to deploy to a service like Vercel is by using a Git repository. Create a free account on [GitHub](https://github.com) and push your project code there.
+2.  **Import to Vercel:** Sign up for [Vercel](https://vercel.com/) (you can use your GitHub account for a seamless setup) and import the PocketMarks repository.
 3.  **Configure Environment Variables:** During the import process, Vercel will ask for Environment Variables. This is the secure, cloud-based equivalent of the `.env.local` file. Add your `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD` here.
 4.  **Deploy:** Vercel will automatically build and deploy the app, giving you a public URL (e.g., `your-project-name.vercel.app`). Only you can access it with the credentials you set.
 
@@ -74,14 +74,6 @@ Since this is a self-hosted application, there is no traditional "forgot passwor
 
 -   **For local setups:** If you forget your password, simply open the `.env.local` file on your computer to see it.
 -   **For deployed setups (like Vercel):** If you forget your password, log in to your Vercel account, navigate to your project's settings, and view the Environment Variables you set.
-
-### A Note on the Logo
-
-You can easily add your own logo to the app.
-1. Create a `logo.png` or `logo.svg` file.
-2. Place it inside the `/public` folder at the root of the project.
-3. The app will need to be updated to reference `/logo.png`.
-(If you need an SVG but your tool requires a subscription, you can use free online tools like `Vectr.com` or desktop software like `Inkscape` to create or convert your logo to SVG).
 
 ### Privacy and Anonymity
 

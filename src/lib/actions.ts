@@ -37,7 +37,7 @@ export async function login(prevState: { error: string } | undefined, formData: 
     cookies().set(SESSION_COOKIE_NAME, 'true', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: remember ? 60 * 60 * 24 * 30 : undefined, // 30 days or session
+      maxAge: remember ? 60 * 60 * 24 * 180 : undefined, // 6 months or session
       path: '/',
     });
     return redirect('/bookmarks');
