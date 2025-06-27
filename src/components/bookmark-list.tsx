@@ -50,6 +50,7 @@ const findItem = (items: BookmarkItem[], id: string): BookmarkItem | undefined =
       if (found) return found;
     }
   }
+  return undefined;
 };
 
 const findPath = (items: BookmarkItem[], id: string): Folder[] => {
@@ -95,29 +96,6 @@ function sortItems(items: BookmarkItem[], sortBy: string): BookmarkItem[] {
 function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
   if (!term) return items;
   const lowerCaseTerm = term.toLowerCase();
-
-  const results: BookmarkItem[] = [];
-  const traverse = (item: BookmarkItem) => {
-    let matches = false;
-    if(item.title.toLowerCase().includes(lowerCaseTerm)) {
-        matches = true;
-    }
-    if(item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm)) {
-        matches = true;
-    }
-
-    if (item.type === 'folder') {
-        const childrenMatch = filterItems(item.children, term);
-        if (childrenMatch.length > 0) {
-            results.push({ ...item, children: childrenMatch });
-            return; 
-        }
-    }
-    
-    if(matches) {
-        results.push(item);
-    }
-  }
   
   const searchRecursive = (items: BookmarkItem[]): BookmarkItem[] => {
     const found: BookmarkItem[] = [];
@@ -127,10 +105,6 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
       
       if (item.type === 'folder') {
         const childrenResults = searchRecursive(item.children);
-        if (titleMatch || childrenResults.length > 0) {
-          // If the folder title matches, we might not need to show all children, but for now we do to show context
-          // For simplicity in search, we can "flatten" the results. Or just return the matching bookmarks.
-        }
         found.push(...childrenResults);
       } else if (titleMatch || urlMatch) {
         found.push(item);
@@ -161,6 +135,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [linkStatuses, setLinkStatuses] = useState<Record<string, string>>({});
+  const [folderStatuses, setFolderStatuses] = useState<Record<string, boolean>>({});
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('date-desc');
@@ -300,9 +275,32 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   const handleCheckLinks = () => {
     setIsCheckingLinks(true);
+    setFolderStatuses({});
     startTransition(async () => {
         const statuses = await checkDeadLinksAction();
         setLinkStatuses(statuses);
+        
+        const deadFolders: Record<string, boolean> = {};
+        const checkForDeadLinksRecursive = (currentItems: BookmarkItem[]): boolean => {
+            let hasDeadLinks = false;
+            for (const item of currentItems) {
+                if (item.type === 'bookmark') {
+                    if (statuses[item.id] && statuses[item.id] !== 'ok') {
+                        hasDeadLinks = true;
+                    }
+                } else if (item.type === 'folder') {
+                    if (checkForDeadLinksRecursive(item.children)) {
+                        deadFolders[item.id] = true;
+                        hasDeadLinks = true;
+                    }
+                }
+            }
+            return hasDeadLinks;
+        };
+
+        checkForDeadLinksRecursive(items);
+        setFolderStatuses(deadFolders);
+
         setIsCheckingLinks(false);
         toast({ title: "Link check complete", description: "Potentially dead links have been marked." });
     });
@@ -374,9 +372,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   
   return (
     <div className="w-full">
-        <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="flex flex-wrap items-center gap-2 mb-6">
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[180px] h-11">
+              <SelectTrigger className="w-full sm:w-auto h-11 flex-shrink-0">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -394,7 +392,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
             </Button>
             
-            <div className="relative w-full flex-grow sm:flex-grow-0 sm:w-80">
+            <div className="relative flex-grow min-w-[200px] sm:min-w-0 sm:w-auto">
               <Input
                   placeholder="Search bookmarks..."
                   value={searchTerm}
@@ -405,7 +403,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
             
-            <div className="flex gap-4 md:ml-auto">
+            <div className="flex gap-2 ml-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
@@ -447,6 +445,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                             onNavigate={setCurrentFolderId}
                             isSelected={selectedIds.has(item.id)}
                             onSelectionChange={handleSelectionChange}
+                            hasDeadLink={!!folderStatuses[item.id]}
                         />
                     ) : (
                         <BookmarkCard
