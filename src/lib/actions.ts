@@ -23,6 +23,7 @@ const SESSION_COOKIE_NAME = 'pocketmarks_session';
 export async function login(prevState: { error: string } | undefined, formData: FormData) {
   const username = formData.get('username');
   const password = formData.get('password');
+  const remember = formData.get('remember');
 
   const validUsername = process.env.POCKETMARKS_USERNAME || "user";
   const validPassword = process.env.POCKETMARKS_PASSWORD || "test1";
@@ -36,7 +37,7 @@ export async function login(prevState: { error: string } | undefined, formData: 
     cookies().set(SESSION_COOKIE_NAME, 'true', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // One week
+      maxAge: remember ? 60 * 60 * 24 * 30 : undefined, // 30 days or session
       path: '/',
     });
     return redirect('/bookmarks');

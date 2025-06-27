@@ -27,46 +27,63 @@ PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utili
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **Components:** [Shadcn/UI](https://ui.shadcn.com/)
 
-## Local Development Setup
+---
 
-To run PocketMarks on your local machine, follow these steps:
+## Getting Started: Two Ways to Use PocketMarks
+
+You can use PocketMarks in two ways: locally on your computer for maximum privacy, or deployed on a free cloud service to access it from any device.
+
+### Option 1: Local Development (For Private Use on One Computer)
+
+This method runs the app entirely on your machine. Your data never leaves your computer.
 
 1.  **Install Dependencies:** Open a terminal in the project's root directory and run:
     ```bash
     npm install
     ```
 
-2.  **Set Up Environment Variables:** Create a new file named `.env.local` in the root of the project. This file will hold your private credentials. Add the following lines, replacing the example values with your desired username and password:
+2.  **Set Up Credentials:** Create a new file named `.env.local` in the root of the project. This file will hold your private username and password. Add the following lines, replacing the example values:
     ```
     POCKETMARKS_USERNAME=user
     POCKETMARKS_PASSWORD=test1
     ```
-    This file is included in `.gitignore` and will not be committed to your repository, keeping your credentials safe.
+    This file is included in `.gitignore` and will not be committed to your repository.
 
-3.  **Run the Development Server:**
+3.  **Run the App:**
     ```bash
     npm run dev
     ```
 
-4.  **Open the App:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
-    **Tip:** Bookmark this address in your browser for easy access to your personal hub!
+4.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
+    **Tip:** Bookmark this address in your browser for easy access!
 
-## Deployment (Access from Anywhere)
+### Option 2: Deployment (Access from Anywhere via Vercel)
 
-To access your PocketMarks from any device, you need to deploy it to a hosting service. We recommend **Vercel** for its ease of use and generous free plan.
+This method deploys your own **private copy** of the app to a free cloud service, Vercel. Your data is still yours and is not shared with anyone. This is the recommended way to access your bookmarks from multiple devices (phone, tablet, etc.).
 
-1.  **Push to GitHub:** Make sure your project is on a public or private GitHub repository.
-2.  **Import to Vercel:** Sign up for Vercel with your GitHub account and import the PocketMarks repository.
-3.  **Configure Environment Variables:** During the import process, Vercel will ask for Environment Variables. Add your `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD` here. This is the secure, cloud-based equivalent of the `.env.local` file.
-4.  **Deploy:** Vercel will automatically build and deploy the app, giving you a public URL (e.g., `your-project-name.vercel.app`).
+1.  **Push to GitHub:** Make sure your project is on a **GitHub repository**. Vercel requires this to import your code.
+2.  **Import to Vercel:** Sign up for [Vercel](https://vercel.com/) with your GitHub account and import the PocketMarks repository.
+3.  **Configure Environment Variables:** During the import process, Vercel will ask for Environment Variables. This is the secure, cloud-based equivalent of the `.env.local` file. Add your `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD` here.
+4.  **Deploy:** Vercel will automatically build and deploy the app, giving you a public URL (e.g., `your-project-name.vercel.app`). Only you can access it with the credentials you set.
 
-### A Note on Passwords
+---
+
+### A Note on Passwords and Recovery
 
 Since this is a self-hosted application, there is no traditional "forgot password" feature that sends emails. Your credentials are saved directly by you.
-- **For local setups:** If you forget your password, simply open the `.env.local` file on your computer to see it.
-- **For deployed setups (like Vercel):** If you forget your password, log in to your Vercel account, navigate to your project's settings, and view the Environment Variables you set.
 
-## Privacy and Anonymity
+-   **For local setups:** If you forget your password, simply open the `.env.local` file on your computer to see it.
+-   **For deployed setups (like Vercel):** If you forget your password, log in to your Vercel account, navigate to your project's settings, and view the Environment Variables you set.
+
+### A Note on the Logo
+
+You can easily add your own logo to the app.
+1. Create a `logo.png` or `logo.svg` file.
+2. Place it inside the `/public` folder at the root of the project.
+3. The app will need to be updated to reference `/logo.png`.
+(If you need an SVG but your tool requires a subscription, you can use free online tools like `Vectr.com` or desktop software like `Inkscape` to create or convert your logo to SVG).
+
+### Privacy and Anonymity
 
 Since this is a self-hosted application that runs entirely on your machine or your private instance, it is inherently private.
 - **VPN:** It works perfectly with any VPN.

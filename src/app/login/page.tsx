@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -64,6 +65,12 @@ export default function LoginPage() {
               >
                 {showPassword ? <EyeOff className="h-full w-auto" /> : <Eye className="h-full w-auto" />}
               </button>
+            </div>
+            <div className="flex items-center space-x-2">
+                <Checkbox id="remember" name="remember" defaultChecked />
+                <Label htmlFor="remember" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Remember me
+                </Label>
             </div>
             {state?.error && (
                 <p className="text-sm text-destructive">{state.error}</p>
