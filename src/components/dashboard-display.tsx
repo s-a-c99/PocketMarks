@@ -43,8 +43,8 @@ const pieChartConfig = {
 
 
 export function DashboardDisplay({ stats }: DashboardDisplayProps) {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
 
     // Enhance TLD data with colors for the pie chart
     const tldDataWithColors = stats.tldDistribution.map((entry, index) => ({
@@ -115,7 +115,7 @@ export function DashboardDisplay({ stats }: DashboardDisplayProps) {
                                     type="category" 
                                     tickLine={false} 
                                     axisLine={false} 
-                                    tick={{ fill: isDark ? 'white' : 'black', fontSize: 12 }} 
+                                    tick={{ fill: isDark ? 'hsl(var(--card-foreground))' : 'hsl(var(--card-foreground))', fontSize: 12 }} 
                                     width={100}
                                     tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
                                 />
