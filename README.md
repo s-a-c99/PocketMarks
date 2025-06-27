@@ -1,6 +1,6 @@
 # PocketMarks - Your Personal Bookmark Hub
 
-PocketMarks is a self-hosted, privacy-first bookmarking application designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage your bookmarks, organize them into folders, and keep your collection tidy and up-to-date.
+PocketMarks is a self-hosted, privacy-first bookmarking utility designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage your bookmarks, organize them into folders, and keep your collection tidy and up-to-date.
 
 ![PocketMarks Screenshot](https://placehold.co/800x400.png?text=PocketMarks+App+Screenshot)
 
@@ -27,14 +27,6 @@ PocketMarks is a self-hosted, privacy-first bookmarking application designed for
 - **Components:** [Shadcn/UI](https://ui.shadcn.com/)
 - **AI Toolkit (available):** [Genkit](https://firebase.google.com/docs/genkit) (The framework is integrated but currently not used for any features to ensure 100% privacy).
 
-## Getting the Code
-
-This project was developed in an online IDE (like Firebase Studio). To get the code on your local machine:
-
-1.  Use the **"Switch to Code"** or equivalent feature in the IDE to view the file structure.
-2.  Look for an option to **Download a ZIP** of the project or a command to **Clone the repository** using Git.
-
-Once you have the project files in a folder on your computer, you can set it up for local development.
 
 ## Local Development Setup
 

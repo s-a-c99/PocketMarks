@@ -6,18 +6,24 @@ First off, thank you for considering contributing to PocketMarks! Your help is g
 
 ### Reporting Bugs
 
-- **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/issues).
-- If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/issues/new). Be sure to include a **title and clear description**, as much relevant information as possible, and a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
+Before reporting a bug, please search the existing issues on the project's GitHub repository to see if someone has already reported it.
+
+If you can't find an existing issue, please open a new one. In your report, be sure to include:
+- A clear and descriptive title.
+- A detailed description of the problem.
+- Steps to reproduce the bug.
+- A code sample or an executable test case demonstrating the issue, if applicable.
 
 ### Suggesting Enhancements
 
-- Open a new issue to suggest an enhancement. Please provide a clear description of the enhancement and its potential benefits.
+To suggest an enhancement, open a new issue on the GitHub repository. Please provide a clear description of the enhancement and explain why it would be beneficial to the project.
 
 ### Pull Requests
 
 1.  Fork the repository and create your branch from `main`.
-2.  Make sure your code lints.
-3.  Issue that pull request!
+2.  Make your changes.
+3.  Ensure your code lints and follows the project's style guidelines.
+4.  Submit a pull request with a clear description of your changes.
 
 ## Styleguides
 
