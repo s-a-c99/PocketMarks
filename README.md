@@ -43,8 +43,6 @@ To run PocketMarks on your local machine, follow these steps:
     ```
     This file is included in `.gitignore` and will not be committed to your repository, keeping your credentials safe.
 
-    > **Important:** Since this is a self-hosted application, there is no traditional "forgot password" feature. Your username and password are saved directly in this `.env.local` file. If you forget them, you can simply open this file to see them.
-
 3.  **Run the Development Server:**
     ```bash
     npm run dev
@@ -53,12 +51,27 @@ To run PocketMarks on your local machine, follow these steps:
 4.  **Open the App:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
     **Tip:** Bookmark this address in your browser for easy access to your personal hub!
 
+## Deployment (Access from Anywhere)
+
+To access your PocketMarks from any device, you need to deploy it to a hosting service. We recommend **Vercel** for its ease of use and generous free plan.
+
+1.  **Push to GitHub:** Make sure your project is on a public or private GitHub repository.
+2.  **Import to Vercel:** Sign up for Vercel with your GitHub account and import the PocketMarks repository.
+3.  **Configure Environment Variables:** During the import process, Vercel will ask for Environment Variables. Add your `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD` here. This is the secure, cloud-based equivalent of the `.env.local` file.
+4.  **Deploy:** Vercel will automatically build and deploy the app, giving you a public URL (e.g., `your-project-name.vercel.app`).
+
+### A Note on Passwords
+
+Since this is a self-hosted application, there is no traditional "forgot password" feature that sends emails. Your credentials are saved directly by you.
+- **For local setups:** If you forget your password, simply open the `.env.local` file on your computer to see it.
+- **For deployed setups (like Vercel):** If you forget your password, log in to your Vercel account, navigate to your project's settings, and view the Environment Variables you set.
+
 ## Privacy and Anonymity
 
-Since this is a self-hosted application that runs entirely on your machine, it is inherently private.
-- **VPN:** It works perfectly with any VPN, as all traffic is local.
-- **Tor Browser:** You can access your local server via Tor Browser without any issues.
-- **No External Calls:** The application makes no external API calls, except for the "Dead Link Checker" feature, which must contact website domains to verify their status. All bookmark data is stored locally in the `bookmarks.json` file and is never sent to a third party.
+Since this is a self-hosted application that runs entirely on your machine or your private instance, it is inherently private.
+- **VPN:** It works perfectly with any VPN.
+- **Tor Browser:** You can access your local server or deployed instance via Tor Browser without any issues.
+- **No External Calls:** The application makes no external API calls, except for the "Dead Link Checker" feature, which must contact website domains to verify their status. All bookmark data is stored in the `bookmarks.json` file and is never sent to a third party.
 
 ## Support the Project
 
