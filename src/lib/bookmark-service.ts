@@ -149,43 +149,42 @@ function getAllUrls(items: BookmarkItem[], urlMap: Map<string, string> = new Map
 }
 
 const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
-  const items: BookmarkItem[] = [];
+    const items: BookmarkItem[] = [];
+    // Direct children of a DL are DTs (and maybe DDs, but we care about DTs)
+    const children = Array.from(root.children).filter(el => el.tagName === 'DT');
   
-  for (const child of Array.from(root.children)) {
-      if (child.tagName === 'DT') {
-          const anchor = child.querySelector(':scope > A');
-          const header = child.querySelector(':scope > H3');
-          
-          const add_date_attr = anchor?.getAttribute('ADD_DATE') || header?.getAttribute('ADD_DATE');
-          const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
-          const createdAt = new Date(add_date).toISOString();
+    for (const child of children) {
+        const anchor = child.querySelector(':scope > A');
+        const header = child.querySelector(':scope > H3');
+        const sublist = child.querySelector(':scope > DL');
 
-          if (header) {
-              const sublist = child.querySelector(':scope > DL');
-              const children = sublist ? parseBookmarksRecursive(sublist) : [];
-              items.push({
-                  id: uuidv4(),
-                  type: 'folder',
-                  title: header.textContent || 'Untitled Folder',
-                  children: children,
-                  createdAt: createdAt,
-              });
-          } else if (anchor) {
-              const url = anchor.getAttribute('HREF');
-              const title = anchor.textContent || 'Untitled Bookmark';
-              if (url) {
-                  items.push({
-                      id: uuidv4(),
-                      type: 'bookmark',
-                      title: title,
-                      url: url,
-                      createdAt: createdAt,
-                  });
-              }
-          }
-      }
-  }
-  return items;
+        const add_date_attr = anchor?.getAttribute('ADD_DATE') || header?.getAttribute('ADD_DATE');
+        const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
+        const createdAt = new Date(add_date).toISOString();
+
+        if (header) {
+            items.push({
+                id: uuidv4(),
+                type: 'folder',
+                title: header.textContent || 'Untitled Folder',
+                children: sublist ? parseBookmarksRecursive(sublist) : [],
+                createdAt: createdAt,
+            });
+        } else if (anchor) {
+            const url = anchor.getAttribute('HREF');
+            const title = anchor.textContent || 'Untitled Bookmark';
+            if (url) {
+                items.push({
+                    id: uuidv4(),
+                    type: 'bookmark',
+                    title: title,
+                    url: url,
+                    createdAt: createdAt,
+                });
+            }
+        }
+    }
+    return items;
 };
 
 export async function parseBookmarks(fileContent: string): Promise<BookmarkItem[]> {
@@ -340,12 +339,10 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-            
-            const initialUrl = new URL(item.url);
 
             const response = await fetch(item.url, { 
                 signal: controller.signal, 
-                redirect: 'follow', // follow redirects
+                redirect: 'follow',
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -354,12 +351,7 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
             });
             clearTimeout(timeoutId);
 
-            const finalUrl = new URL(response.url);
-
-            // Check for ISP or captive portal redirects for non-existent domains
-            if (response.ok && response.redirected && initialUrl.hostname !== finalUrl.hostname) {
-                 linkStatuses[item.id] = 'Dead';
-            } else if (response.ok) {
+            if (response.ok) {
               linkStatuses[item.id] = 'ok';
             } else {
               linkStatuses[item.id] = `Error (${response.status})`;
