@@ -57,8 +57,20 @@ To run PocketMarks on your local machine, follow these steps:
     npm run dev
     ```
 
-4.  **Open the App:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002) to see the application running.
+4.  **Open the App:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
+    **Tip:** Bookmark this address in your browser for easy access to your personal hub!
+
+## Privacy and Anonymity
+
+Since this is a self-hosted application that runs entirely on your machine, it is inherently private.
+- **VPN:** It works perfectly with any VPN, as all traffic is local.
+- **Tor Browser:** You can access your local server via Tor Browser without any issues.
+- **No External Calls:** The application makes no external API calls, except for the "Dead Link Checker" feature, which must contact website domains to verify their status.
 
 ## Contributing
 
-This is a personal project, but feel free to fork it, explore the code, and adapt it for your own needs.
+We welcome contributions! If you have ideas for new features, bug fixes, or improvements, please see our [Contribution Guidelines](CONTRIBUTING.md).
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
