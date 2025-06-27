@@ -67,7 +67,6 @@ const findPath = (items: BookmarkItem[], id: string): Folder[] => {
 
 function sortItems(items: BookmarkItem[], sortBy: string): BookmarkItem[] {
   const sorted = [...items].sort((a, b) => {
-    // Keep folders on top unless sorting is specified otherwise
     if (a.type === 'folder' && b.type !== 'folder') return -1;
     if (a.type !== 'folder' && b.type === 'folder') return 1;
 
@@ -108,15 +107,39 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
     }
 
     if (item.type === 'folder') {
-        item.children.forEach(traverse);
+        const childrenMatch = filterItems(item.children, term);
+        if (childrenMatch.length > 0) {
+            results.push({ ...item, children: childrenMatch });
+            return; 
+        }
     }
     
     if(matches) {
         results.push(item);
     }
   }
-  items.forEach(traverse);
-  return results;
+  
+  const searchRecursive = (items: BookmarkItem[]): BookmarkItem[] => {
+    const found: BookmarkItem[] = [];
+    for (const item of items) {
+      const titleMatch = item.title.toLowerCase().includes(lowerCaseTerm);
+      const urlMatch = item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm);
+      
+      if (item.type === 'folder') {
+        const childrenResults = searchRecursive(item.children);
+        if (titleMatch || childrenResults.length > 0) {
+          // If the folder title matches, we might not need to show all children, but for now we do to show context
+          // For simplicity in search, we can "flatten" the results. Or just return the matching bookmarks.
+        }
+        found.push(...childrenResults);
+      } else if (titleMatch || urlMatch) {
+        found.push(item);
+      }
+    }
+    return found;
+  };
+  
+  return searchRecursive(items);
 }
 
 
@@ -147,19 +170,16 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   }, [initialItems]);
   
   const sortedItems = useMemo(() => sortItems(items, sortBy), [items, sortBy]);
-  const filteredItems = useMemo(() => filterItems(sortedItems, searchTerm), [sortedItems, searchTerm]);
-
-  const currentFolder = useMemo(() => currentFolderId ? findItem(items, currentFolderId) as Folder : null, [items, currentFolderId]);
-  const currentPath = useMemo(() => currentFolderId ? findPath(items, currentFolderId) : [], [items, currentFolderId]);
   
-  const currentItems = useMemo(() => {
-    if (searchTerm) {
-        return filteredItems;
-    }
-    const itemsToShow = currentFolder ? currentFolder.children : sortedItems;
-    // When not searching, we sort the items inside the current view
-    return sortItems(itemsToShow, sortBy);
-  }, [currentFolder, sortedItems, filteredItems, searchTerm, sortBy]);
+  const currentFolder = useMemo(() => currentFolderId ? findItem(sortedItems, currentFolderId) as Folder : null, [sortedItems, currentFolderId]);
+  const currentPath = useMemo(() => currentFolderId ? findPath(sortedItems, currentFolderId) : [], [sortedItems, currentFolderId]);
+  
+  const itemsToDisplay = useMemo(() => {
+      if (searchTerm) {
+          return filterItems(sortedItems, searchTerm);
+      }
+      return currentFolder ? currentFolder.children : sortedItems;
+  }, [searchTerm, sortedItems, currentFolder]);
 
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
@@ -354,20 +374,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   
   return (
     <div className="w-full">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-grow">
-            <Input
-                placeholder="Search bookmarks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11 text-base"
-                disabled={isPending || isCheckingLinks}
-            />
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            </div>
-            
+        <div className="flex flex-wrap items-center gap-4 mb-6">
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full md:w-[180px] h-11">
+              <SelectTrigger className="w-full sm:w-[180px] h-11">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -378,48 +387,57 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               </SelectContent>
             </Select>
 
-            <div className="flex gap-2 flex-wrap">
-                <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending || isCheckingLinks}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Bookmark
-                </Button>
-                <Button onClick={handleAddNewFolder} variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
-                    <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
-                </Button>
+            <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                <Plus className="mr-2 h-4 w-4" /> Add Bookmark
+            </Button>
+            <Button onClick={handleAddNewFolder} variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
+            </Button>
+            
+            <div className="relative w-full flex-grow sm:flex-grow-0 sm:w-80">
+              <Input
+                  placeholder="Search bookmarks..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-11 text-base w-full"
+                  disabled={isPending || isCheckingLinks}
+              />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
-        </div>
+            
+            <div className="flex gap-4 md:ml-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                    Import / Export <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleImportClick('merge')}>
+                    Merge from file...
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleImportClick('replace')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    Replace from file...
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleExport} disabled={isPending || isCheckingLinks}>Export all...</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportSelected} disabled={isPending || isCheckingLinks || selectedIds.size === 0}>Export selected...</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
-                Import / Export <ChevronDown className="ml-2 h-4 w-4" />
+              <Button variant="outline" className="font-headline h-11" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
+                  {isCheckingLinks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2Off className="mr-2 h-4 w-4" />}
+                  Check for dead links
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleImportClick('merge')}>
-                Merge from file...
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleImportClick('replace')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                Replace from file...
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExport} disabled={isPending || isCheckingLinks}>Export all...</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportSelected} disabled={isPending || isCheckingLinks || selectedIds.size === 0}>Export selected...</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button variant="outline" className="font-headline h-11" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
-              {isCheckingLinks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2Off className="mr-2 h-4 w-4" />}
-              Check for dead links
-          </Button>
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
+            </div>
         </div>
 
         {!searchTerm && <BreadcrumbNav path={currentPath} onNavigate={setCurrentFolderId} />}
 
-        {currentItems.length > 0 ? (
+        {itemsToDisplay.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3">
-                {currentItems.map(item =>
+                {itemsToDisplay.map(item =>
                     item.type === 'folder' ? (
                         <FolderCard
                             key={item.id}

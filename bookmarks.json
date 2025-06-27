@@ -26,5 +26,156 @@
     "title": "sfhfsshsfhsf",
     "createdAt": "2025-06-26T15:08:57.152Z",
     "children": []
+  },
+  {
+    "id": "f0697071-4d3b-472a-ad24-93bd232c2aa9",
+    "type": "bookmark",
+    "title": "affga",
+    "url": "https://www.citrullino.com",
+    "createdAt": "2025-06-27T08:52:25.152Z"
+  },
+  {
+    "id": "8406db35-1df7-46d8-9e63-7ef8ad69e562",
+    "type": "folder",
+    "title": "Bookmarks bar",
+    "children": [
+      {
+        "id": "d2566e9f-a915-4932-8fc8-3444a916e285",
+        "type": "folder",
+        "title": "hack",
+        "children": [
+          {
+            "id": "8551d929-531e-4aa2-b138-1f559ce855a1",
+            "type": "bookmark",
+            "title": "FREE TOOLS | OSINT Combine | NexusXplore",
+            "url": "https://www.osintcombine.com/tools",
+            "createdAt": "2025-06-26T09:46:33.000Z"
+          },
+          {
+            "id": "09a78ff4-9c4c-417f-a6fd-fbec381a0f5a",
+            "type": "bookmark",
+            "title": "WhatsMyName Web",
+            "url": "https://whatsmyname.app/",
+            "createdAt": "2025-06-26T09:45:51.000Z"
+          }
+        ],
+        "createdAt": "2025-06-26T09:46:00.000Z"
+      },
+      {
+        "id": "373c18ab-06f1-4a15-95da-2800b54f96a4",
+        "type": "folder",
+        "title": "da leggere",
+        "children": [
+          {
+            "id": "9522db58-80fb-4691-b33c-e07f1cdf5247",
+            "type": "bookmark",
+            "title": "Un coatto diventato smanettone – i misteri di andrea stroppa: da torpignattara alla cia, via carrai",
+            "url": "https://leorugens.wordpress.com/wp-content/uploads/2024/12/un-coatto-diventato-smanettone-e28093-i-misteri-di-andrea-stroppa_-da-torpignattara-alla-cia-via-carrai.pdf",
+            "createdAt": "2025-06-26T09:35:11.000Z"
+          },
+          {
+            "id": "87f8b161-3f5d-44b0-abb2-5ccc5ef16273",
+            "type": "bookmark",
+            "title": "Microsoft Word - 45967348_1",
+            "url": "https://www.washingtonpost.com/documents/2a00ce74-6d58-4f8e-bc2c-1bb820ee4705.pdf",
+            "createdAt": "2025-06-26T09:33:42.000Z"
+          },
+          {
+            "id": "9b452080-8989-401a-b8ab-d67658035a83",
+            "type": "bookmark",
+            "title": "ELON MUSK SECRET MONEY GUYS BEHIND HIS CORRUPTION EXPOSED.pdf",
+            "url": "https://filedn.eu/ljzrnKVxB5kpau6Nn7TJ2TJ/RARE%20EARTH%20AND%20LITHIUM%20BATTERY%20MINE%20CORRUPTION/ELON%20MUSK%20SECRET%20MONEY%20GUYS%20BEHIND%20HIS%20CORRUPTION%20EXPOSED.pdf",
+            "createdAt": "2025-06-26T09:33:13.000Z"
+          }
+        ],
+        "createdAt": "2025-06-26T09:33:21.000Z"
+      }
+    ],
+    "createdAt": "2025-05-17T21:53:25.000Z"
+  },
+  {
+    "id": "69a7a98c-bb87-4261-9495-28522d8da572",
+    "type": "folder",
+    "title": "Trash",
+    "children": [
+      {
+        "id": "c5a1ae71-96d1-45d9-9a07-1569f89ef5f4",
+        "type": "bookmark",
+        "title": "World of Warships",
+        "url": "https://worldofwarships.eu/",
+        "createdAt": "2025-06-26T09:26:26.000Z"
+      },
+      {
+        "id": "1a673c6a-4550-4df0-9353-abd19db5a49a",
+        "type": "bookmark",
+        "title": "eToro",
+        "url": "https://www.etoro.com/",
+        "createdAt": "2025-06-26T09:26:12.000Z"
+      },
+      {
+        "id": "bc2c4ac7-b14f-4e68-b64e-42f093ba021d",
+        "type": "bookmark",
+        "title": "Verisure",
+        "url": "https://verisure.fr/",
+        "createdAt": "2025-06-26T09:26:06.000Z"
+      },
+      {
+        "id": "4ed0aa8f-7766-4628-8d22-ce6712d46bbc",
+        "type": "bookmark",
+        "title": "Amazon Prime",
+        "url": "https://www.amazon.fr/",
+        "createdAt": "2025-06-26T09:26:05.000Z"
+      },
+      {
+        "id": "edbba859-ff17-488b-96ff-db1fcdfa2d16",
+        "type": "bookmark",
+        "title": "Hero Wars",
+        "url": "https://www.hero-wars.com/",
+        "createdAt": "2025-06-26T09:26:01.000Z"
+      },
+      {
+        "id": "f9369052-6196-4eff-b505-e24162d02d04",
+        "type": "bookmark",
+        "title": "Temu",
+        "url": "https://www.temu.com/fr",
+        "createdAt": "2025-06-26T09:26:00.000Z"
+      },
+      {
+        "id": "ffac6029-b1d0-45cc-906c-c37c1169d62d",
+        "type": "bookmark",
+        "title": "SHEIN",
+        "url": "https://fr.shein.com/",
+        "createdAt": "2025-06-26T09:25:57.000Z"
+      },
+      {
+        "id": "c108fba7-5756-448b-90dc-babd3f4eba90",
+        "type": "bookmark",
+        "title": "Aliexpress",
+        "url": "https://best.aliexpress.com/",
+        "createdAt": "2025-06-26T09:25:55.000Z"
+      },
+      {
+        "id": "5d2d58b7-11b5-4126-8181-59185fb7de44",
+        "type": "bookmark",
+        "title": "Booking.com",
+        "url": "https://www.booking.com/",
+        "createdAt": "2025-06-26T09:25:52.000Z"
+      },
+      {
+        "id": "e1324a46-cd51-4f34-9bcf-38a24afa243e",
+        "type": "bookmark",
+        "title": "eBay",
+        "url": "http://www.ebay.fr/",
+        "createdAt": "2025-06-26T09:25:46.000Z"
+      },
+      {
+        "id": "81e5e1eb-7153-4f26-84e2-1ab8c2e618ba",
+        "type": "bookmark",
+        "title": "Amazon",
+        "url": "https://www.amazon.fr/",
+        "createdAt": "2025-06-26T09:25:43.000Z"
+      }
+    ],
+    "createdAt": "2025-05-17T21:53:25.000Z"
   }
 ]
