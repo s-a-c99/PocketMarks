@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown } from "lucide-react";
+import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown, Search } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -370,6 +370,31 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     });
   };
   
+  const normalizeClientUrl = (url: string): string => {
+      try {
+          const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+          return (urlObj.hostname.replace(/^www\./, '') + urlObj.pathname).replace(/\/$/, '');
+      } catch (e) {
+          return url.trim().replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '');
+      }
+  }
+
+  const checkForDuplicate = (url: string): boolean => {
+    const normalizedUrl = normalizeClientUrl(url);
+    const findRecursive = (items: BookmarkItem[]): boolean => {
+      for (const item of items) {
+        if (item.type === 'bookmark' && normalizeClientUrl(item.url) === normalizedUrl) {
+          return true;
+        }
+        if (item.type === 'folder' && findRecursive(item.children)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    return findRecursive(items);
+  };
+  
   return (
     <div className="w-full">
         <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -392,7 +417,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
             </Button>
             
-            <div className="relative flex-grow min-w-[200px] sm:min-w-0 sm:w-auto">
+            <div className="relative flex-grow min-w-[200px] sm:min-w-0 sm:flex-1">
               <Input
                   placeholder="Search bookmarks..."
                   value={searchTerm}
@@ -400,10 +425,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                   className="pl-10 h-11 text-base w-full"
                   disabled={isPending || isCheckingLinks}
               />
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             </div>
             
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
@@ -476,6 +501,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         setIsOpen={setIsDialogOpen}
         onItemSaved={handleSaveItem}
         itemToEdit={itemToEdit}
+        onCheckForDuplicate={checkForDuplicate}
       />
       <PasswordConfirmationDialog
         isOpen={isPasswordDialogOpen}

@@ -1,97 +1,10 @@
 [
   {
-    "id": "6d910a8e-310c-4d20-9ed4-a3942022e458",
-    "type": "folder",
-    "title": "Pinboard",
-    "children": [],
-    "createdAt": "2025-05-17T21:53:25.000Z"
-  },
-  {
-    "id": "2e2821bb-a74b-47da-a9de-bf65aa454557",
-    "type": "folder",
-    "title": "Unsorted bookmarks",
-    "children": [],
-    "createdAt": "2025-05-17T21:53:25.000Z"
-  },
-  {
-    "id": "a8190678-5b8f-471d-83f3-1d9b2d070f60",
-    "type": "folder",
-    "title": "Unsynchronized Pinboard",
-    "children": [],
-    "createdAt": "2025-05-17T21:53:25.000Z"
-  },
-  {
-    "id": "d17ae309-4ce9-454e-a33f-16a1fe1c1f89",
-    "type": "folder",
-    "title": "sfhfsshsfhsf",
-    "createdAt": "2025-06-26T15:08:57.152Z",
-    "children": []
-  },
-  {
     "id": "f0697071-4d3b-472a-ad24-93bd232c2aa9",
     "type": "bookmark",
     "title": "affga",
     "url": "https://www.citrullino.com",
     "createdAt": "2025-06-27T08:52:25.152Z"
-  },
-  {
-    "id": "8406db35-1df7-46d8-9e63-7ef8ad69e562",
-    "type": "folder",
-    "title": "Bookmarks bar",
-    "children": [
-      {
-        "id": "d2566e9f-a915-4932-8fc8-3444a916e285",
-        "type": "folder",
-        "title": "hack",
-        "children": [
-          {
-            "id": "8551d929-531e-4aa2-b138-1f559ce855a1",
-            "type": "bookmark",
-            "title": "FREE TOOLS | OSINT Combine | NexusXplore",
-            "url": "https://www.osintcombine.com/tools",
-            "createdAt": "2025-06-26T09:46:33.000Z"
-          },
-          {
-            "id": "09a78ff4-9c4c-417f-a6fd-fbec381a0f5a",
-            "type": "bookmark",
-            "title": "WhatsMyName Web",
-            "url": "https://whatsmyname.app/",
-            "createdAt": "2025-06-26T09:45:51.000Z"
-          }
-        ],
-        "createdAt": "2025-06-26T09:46:00.000Z"
-      },
-      {
-        "id": "373c18ab-06f1-4a15-95da-2800b54f96a4",
-        "type": "folder",
-        "title": "da leggere",
-        "children": [
-          {
-            "id": "9522db58-80fb-4691-b33c-e07f1cdf5247",
-            "type": "bookmark",
-            "title": "Un coatto diventato smanettone – i misteri di andrea stroppa: da torpignattara alla cia, via carrai",
-            "url": "https://leorugens.wordpress.com/wp-content/uploads/2024/12/un-coatto-diventato-smanettone-e28093-i-misteri-di-andrea-stroppa_-da-torpignattara-alla-cia-via-carrai.pdf",
-            "createdAt": "2025-06-26T09:35:11.000Z"
-          },
-          {
-            "id": "87f8b161-3f5d-44b0-abb2-5ccc5ef16273",
-            "type": "bookmark",
-            "title": "Microsoft Word - 45967348_1",
-            "url": "https://www.washingtonpost.com/documents/2a00ce74-6d58-4f8e-bc2c-1bb820ee4705.pdf",
-            "createdAt": "2025-06-26T09:33:42.000Z"
-          },
-          {
-            "id": "9b452080-8989-401a-b8ab-d67658035a83",
-            "type": "bookmark",
-            "title": "ELON MUSK SECRET MONEY GUYS BEHIND HIS CORRUPTION EXPOSED.pdf",
-            "url": "https://filedn.eu/ljzrnKVxB5kpau6Nn7TJ2TJ/RARE%20EARTH%20AND%20LITHIUM%20BATTERY%20MINE%20CORRUPTION/ELON%20MUSK%20SECRET%20MONEY%20GUYS%20BEHIND%20HIS%20CORRUPTION%20EXPOSED.pdf",
-            "createdAt": "2025-06-26T09:33:13.000Z"
-          }
-        ],
-        "createdAt": "2025-06-26T09:33:21.000Z"
-      }
-    ],
-    "createdAt": "2025-05-17T21:53:25.000Z"
   },
   {
     "id": "69a7a98c-bb87-4261-9495-28522d8da572",
@@ -198,5 +111,115 @@
     "title": "dfgsd",
     "url": "https://mfoweum.com",
     "createdAt": "2025-06-27T09:25:51.318Z"
+  },
+  {
+    "id": "78971487-8b90-4609-8b4f-512334603942",
+    "type": "folder",
+    "title": "Bookmarks bar",
+    "children": [
+      {
+        "id": "91cea40c-5651-47b0-be8c-ce3b48b5c9ef",
+        "type": "folder",
+        "title": "hack",
+        "children": [
+          {
+            "id": "0399c96d-94b8-4607-8ec2-cb652e3d0d8c",
+            "type": "bookmark",
+            "title": "FREE TOOLS | OSINT Combine | NexusXplore",
+            "url": "https://www.osintcombine.com/tools",
+            "createdAt": "2025-06-26T09:46:33.000Z"
+          },
+          {
+            "id": "8ff6b007-3052-4345-a15c-7a181d6d3105",
+            "type": "bookmark",
+            "title": "WhatsMyName Web",
+            "url": "https://whatsmyname.app/",
+            "createdAt": "2025-06-26T09:45:51.000Z"
+          }
+        ],
+        "createdAt": "2025-06-26T09:46:00.000Z"
+      },
+      {
+        "id": "aff9522e-8834-4d4d-9f59-063bda447ffe",
+        "type": "folder",
+        "title": "da leggere",
+        "children": [
+          {
+            "id": "7dcd3c48-3eb2-4d03-970c-3aa956efc4d3",
+            "type": "bookmark",
+            "title": "Un coatto diventato smanettone – i misteri di andrea stroppa: da torpignattara alla cia, via carrai",
+            "url": "https://leorugens.wordpress.com/wp-content/uploads/2024/12/un-coatto-diventato-smanettone-e28093-i-misteri-di-andrea-stroppa_-da-torpignattara-alla-cia-via-carrai.pdf",
+            "createdAt": "2025-06-26T09:35:11.000Z"
+          },
+          {
+            "id": "3a1bd6aa-cbda-426b-9066-4bd4e65d300d",
+            "type": "bookmark",
+            "title": "Microsoft Word - 45967348_1",
+            "url": "https://www.washingtonpost.com/documents/2a00ce74-6d58-4f8e-bc2c-1bb820ee4705.pdf",
+            "createdAt": "2025-06-26T09:33:42.000Z"
+          },
+          {
+            "id": "ec254e6f-d27e-4425-bae7-65636356b463",
+            "type": "bookmark",
+            "title": "ELON MUSK SECRET MONEY GUYS BEHIND HIS CORRUPTION EXPOSED.pdf",
+            "url": "https://filedn.eu/ljzrnKVxB5kpau6Nn7TJ2TJ/RARE%20EARTH%20AND%20LITHIUM%20BATTERY%20MINE%20CORRUPTION/ELON%20MUSK%20SECRET%20MONEY%20GUYS%20BEHIND%20HIS%20CORRUPTION%20EXPOSED.pdf",
+            "createdAt": "2025-06-26T09:33:13.000Z"
+          }
+        ],
+        "createdAt": "2025-06-26T09:33:21.000Z"
+      }
+    ],
+    "createdAt": "2025-05-17T21:53:25.000Z"
+  },
+  {
+    "id": "71edf036-1035-4a17-9c88-c623d9213dc9",
+    "type": "folder",
+    "title": "Essential Tools",
+    "children": [
+      {
+        "id": "acd59ee4-4905-4fb7-a4ba-58cba37037d0",
+        "type": "bookmark",
+        "title": "Vercel: Develop. Preview. Ship.",
+        "url": "https://vercel.com",
+        "createdAt": "2025-06-27T10:06:48.976Z"
+      },
+      {
+        "id": "8ee7885e-fa09-4a19-bd62-1e1db8420a36",
+        "type": "bookmark",
+        "title": "Shadcn/UI: Components",
+        "url": "https://ui.shadcn.com",
+        "createdAt": "2025-06-27T10:06:48.977Z"
+      },
+      {
+        "id": "e180138e-23a3-4ad4-b836-6d5ff0725961",
+        "type": "bookmark",
+        "title": "Tailwind CSS",
+        "url": "https://tailwindcss.com",
+        "createdAt": "2025-06-27T10:06:48.977Z"
+      }
+    ],
+    "createdAt": "2025-06-27T10:06:48.976Z"
+  },
+  {
+    "id": "043970a0-a647-42c1-a427-b25806d34952",
+    "type": "folder",
+    "title": "Inspiration",
+    "children": [
+      {
+        "id": "39372a09-2b87-4e49-b2d7-ac099d87c68d",
+        "type": "bookmark",
+        "title": "Awwwards",
+        "url": "https://awwwards.com",
+        "createdAt": "2025-06-27T10:06:48.977Z"
+      },
+      {
+        "id": "2136030d-4959-4724-9f46-32d41e85ef7d",
+        "type": "bookmark",
+        "title": "Smashing Magazine",
+        "url": "https://smashingmagazine.com",
+        "createdAt": "2025-06-27T10:06:48.978Z"
+      }
+    ],
+    "createdAt": "2025-06-27T10:06:48.977Z"
   }
 ]
