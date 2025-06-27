@@ -150,39 +150,39 @@ function getAllUrls(items: BookmarkItem[], urlMap: Map<string, string> = new Map
 
 const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
     const items: BookmarkItem[] = [];
-    // Direct children of a DL are DTs (and maybe DDs, but we care about DTs)
-    const children = Array.from(root.children).filter(el => el.tagName === 'DT');
+    // Direct children of a DL are DTs. Iterate through them.
+    for (const child of Array.from(root.children)) {
+      if (child.tagName !== 'DT') continue;
   
-    for (const child of children) {
-        const anchor = child.querySelector(':scope > A');
-        const header = child.querySelector(':scope > H3');
-        const sublist = child.querySelector(':scope > DL');
-
-        const add_date_attr = anchor?.getAttribute('ADD_DATE') || header?.getAttribute('ADD_DATE');
-        const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
-        const createdAt = new Date(add_date).toISOString();
-
-        if (header) {
-            items.push({
-                id: uuidv4(),
-                type: 'folder',
-                title: header.textContent || 'Untitled Folder',
-                children: sublist ? parseBookmarksRecursive(sublist) : [],
-                createdAt: createdAt,
-            });
-        } else if (anchor) {
-            const url = anchor.getAttribute('HREF');
-            const title = anchor.textContent || 'Untitled Bookmark';
-            if (url) {
-                items.push({
-                    id: uuidv4(),
-                    type: 'bookmark',
-                    title: title,
-                    url: url,
-                    createdAt: createdAt,
-                });
-            }
+      const anchor = child.querySelector(':scope > A');
+      const header = child.querySelector(':scope > H3');
+      const sublist = child.querySelector(':scope > DL');
+  
+      const add_date_attr = anchor?.getAttribute('ADD_DATE') || header?.getAttribute('ADD_DATE');
+      const add_date = add_date_attr ? parseInt(add_date_attr, 10) * 1000 : Date.now();
+      const createdAt = new Date(add_date).toISOString();
+  
+      if (header) { // It's a folder
+        items.push({
+          id: uuidv4(),
+          type: 'folder',
+          title: header.textContent || 'Untitled Folder',
+          children: sublist ? parseBookmarksRecursive(sublist) : [],
+          createdAt: createdAt,
+        });
+      } else if (anchor) { // It's a bookmark
+        const url = anchor.getAttribute('HREF');
+        const title = anchor.textContent || 'Untitled Bookmark';
+        if (url) {
+          items.push({
+            id: uuidv4(),
+            type: 'bookmark',
+            title: title,
+            url: url,
+            createdAt: createdAt,
+          });
         }
+      }
     }
     return items;
 };
@@ -351,16 +351,20 @@ export async function checkAllLinks(): Promise<Record<string, string>> {
             });
             clearTimeout(timeoutId);
 
-            if (response.ok) {
-              linkStatuses[item.id] = 'ok';
+            // A link is only definitively dead if it returns a 404.
+            // Other errors (403, 5xx, etc.) can be temporary or due to bot blocking.
+            // To avoid false positives, we treat them as 'ok'.
+            if (response.status === 404) {
+              linkStatuses[item.id] = `Error (404)`;
             } else {
-              linkStatuses[item.id] = `Error (${response.status})`;
+              linkStatuses[item.id] = 'ok';
             }
           } catch (error) {
             if (error instanceof Error) {
                 if (error.name === 'AbortError') {
                     linkStatuses[item.id] = 'Timeout';
                 } else {
+                    // This catches DNS errors (e.g. ENOTFOUND) or network failures.
                     linkStatuses[item.id] = 'Dead';
                 }
             } else {
