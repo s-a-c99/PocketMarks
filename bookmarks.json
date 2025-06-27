@@ -96,7 +96,8 @@
     "type": "bookmark",
     "title": "dhsd",
     "url": "https://www.fare.com",
-    "createdAt": "2025-06-27T09:18:37.557Z"
+    "createdAt": "2025-06-27T09:18:37.557Z",
+    "isFavorite": false
   },
   {
     "id": "ee768aaa-c88d-4e1a-b5f4-2596fc468147",
@@ -110,7 +111,8 @@
     "type": "bookmark",
     "title": "dfgsd",
     "url": "https://mfoweum.com",
-    "createdAt": "2025-06-27T09:25:51.318Z"
+    "createdAt": "2025-06-27T09:25:51.318Z",
+    "isFavorite": true
   },
   {
     "id": "78971487-8b90-4609-8b4f-512334603942",

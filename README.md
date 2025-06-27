@@ -1,6 +1,6 @@
 # PocketMarks - Your Personal Bookmark Hub
 
-PocketMarks is a self-hosted, privacy-first bookmarking utility designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage your bookmarks, organize them into folders, and keep your collection tidy and up-to-date.
+PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utility designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage your bookmarks, organize them into folders, and keep your collection tidy and up-to-date.
 
 ![PocketMarks Screenshot](https://placehold.co/800x400.png?text=PocketMarks+App+Screenshot)
 
@@ -8,6 +8,7 @@ PocketMarks is a self-hosted, privacy-first bookmarking utility designed for use
 
 - **Organize Your Links:** Create bookmarks and nested folders to keep your links organized.
 - **Modern Interface:** A clean and responsive UI with both Light and Dark modes.
+- **Mark Favorites:** Use the star icon to mark your most important bookmarks for quick access.
 - **Robust Import/Export:**
   - Import bookmarks from standard HTML files exported by any browser.
   - Choose to merge new links with your existing collection or replace it entirely.
@@ -25,8 +26,6 @@ PocketMarks is a self-hosted, privacy-first bookmarking utility designed for use
 - **UI:** [React](https://reactjs.org/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **Components:** [Shadcn/UI](https://ui.shadcn.com/)
-- **AI Toolkit (available):** [Genkit](https://firebase.google.com/docs/genkit) (The framework is integrated but currently not used for any features to ensure 100% privacy).
-
 
 ## Local Development Setup
 
@@ -57,7 +56,15 @@ To run PocketMarks on your local machine, follow these steps:
 Since this is a self-hosted application that runs entirely on your machine, it is inherently private.
 - **VPN:** It works perfectly with any VPN, as all traffic is local.
 - **Tor Browser:** You can access your local server via Tor Browser without any issues.
-- **No External Calls:** The application makes no external API calls, except for the "Dead Link Checker" feature, which must contact website domains to verify their status.
+- **No External Calls:** The application makes no external API calls, except for the "Dead Link Checker" feature, which must contact website domains to verify their status. All bookmark data is stored locally in the `bookmarks.json` file and is never sent to a third party.
+
+## Support the Project
+
+If you find this project useful, please consider supporting its development. Thank you!
+
+- [Sponsor on GitHub](https://github.com/sponsors/YOUR_USERNAME)
+- [Support on Patreon](https://patreon.com/YOUR_USERNAME)
+- [Donate via PayPal](https://paypal.me/YOUR_USERNAME)
 
 ## Contributing
 

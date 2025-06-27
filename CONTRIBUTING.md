@@ -6,7 +6,7 @@ First off, thank you for considering contributing to PocketMarks! Your help is g
 
 ### Reporting Bugs
 
-Before reporting a bug, please search the existing issues on the project's GitHub repository to see if someone has already reported it.
+Before reporting a bug, please search the existing issues on the project's GitHub repository to see if someone has already reported it. The link to the issues page will be `https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/issues`. You will need to replace the placeholders with the actual repository URL.
 
 If you can't find an existing issue, please open a new one. In your report, be sure to include:
 - A clear and descriptive title.
@@ -16,7 +16,7 @@ If you can't find an existing issue, please open a new one. In your report, be s
 
 ### Suggesting Enhancements
 
-To suggest an enhancement, open a new issue on the GitHub repository. Please provide a clear description of the enhancement and explain why it would be beneficial to the project.
+To suggest an enhancement, please first check the project's public **Project Board** on GitHub to see if your idea is already part of the roadmap. If not, open a new issue to discuss it. Please provide a clear description of the enhancement and explain why it would be beneficial to the project.
 
 ### Pull Requests
 
