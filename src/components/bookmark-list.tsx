@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown, Search, Star } from "lucide-react";
+import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown, Search, Star, Ban } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder, Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -457,6 +457,13 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
             </Button>
             
+            {selectedIds.size > 0 && (
+              <Button variant="destructive" className="font-headline h-11" onClick={() => setSelectedIds(new Set())} disabled={isPending || isCheckingLinks}>
+                <Ban className="mr-2 h-4 w-4" />
+                Deselect ({selectedIds.size})
+              </Button>
+            )}
+
             <div className="relative flex-grow min-w-[200px] sm:min-w-0 sm:flex-1">
               <Input
                   placeholder="Search bookmarks..."

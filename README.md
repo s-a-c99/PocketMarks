@@ -43,6 +43,8 @@ To run PocketMarks on your local machine, follow these steps:
     ```
     This file is included in `.gitignore` and will not be committed to your repository, keeping your credentials safe.
 
+    > **Important:** Since this is a self-hosted application, there is no traditional "forgot password" feature. Your username and password are saved directly in this `.env.local` file. If you forget them, you can simply open this file to see them.
+
 3.  **Run the Development Server:**
     ```bash
     npm run dev
