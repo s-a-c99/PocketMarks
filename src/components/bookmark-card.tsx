@@ -12,7 +12,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Bookmark } from "@/types";
 import { cn } from "@/lib/utils";
-import { Badge } from "./ui/badge";
 
 type BookmarkCardProps = {
   bookmark: Bookmark;
@@ -24,7 +23,7 @@ type BookmarkCardProps = {
 };
 
 export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange }: BookmarkCardProps) {
-  const { id, title, url, isFavorite, tags } = bookmark;
+  const { id, title, url, isFavorite } = bookmark;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -55,7 +54,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
                 <TooltipContent><p>Select bookmark</p></TooltipContent>
             </Tooltip>
           </CardHeader>
-          <CardContent className="p-0 space-y-1">
+          <CardContent className="p-0">
             <Tooltip>
               <TooltipTrigger asChild>
                  <a href={url} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground/90 truncate hover:underline">
@@ -66,15 +65,6 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
                 <p>{url}</p>
               </TooltipContent>
             </Tooltip>
-            {tags && tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                    {tags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="px-1.5 py-0 text-[10px]">
-                            {tag}
-                        </Badge>
-                    ))}
-                </div>
-            )}
           </CardContent>
         </div>
         <CardFooter className="flex justify-end gap-1 p-0 pt-2">

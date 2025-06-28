@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,16 +11,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { BookmarkItem } from "@/types";
-import { suggestTagsAction } from "@/lib/actions";
-import { Badge } from "./ui/badge";
-import { Sparkles, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   type: z.enum(["bookmark", "folder"]),
   title: z.string().min(1, "Title is required."),
   url: z.string().optional(),
-  tags: z.array(z.string()).optional(),
 })
 .transform((data) => {
     if (data.type === 'bookmark' && data.url && !/^(https?|ftp):\/\//i.test(data.url)) {
@@ -49,8 +44,6 @@ type ItemDialogProps = {
 
 export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemDialogProps) {
   const [itemType, setItemType] = useState<'bookmark' | 'folder'>('bookmark');
-  const [isSuggesting, startSuggestionTransition] = useTransition();
-  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,7 +51,6 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
       type: 'bookmark',
       title: "",
       url: "",
-      tags: [],
     },
   });
 
@@ -72,40 +64,13 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
             type: type,
             title: itemToEdit?.title || "",
             url: itemToEdit?.type === 'bookmark' ? itemToEdit.url : "",
-            tags: itemToEdit?.type === 'bookmark' ? itemToEdit.tags : [],
         });
     }
   }, [itemToEdit, isOpen, form]);
 
-  const handleSuggestTags = () => {
-    const { title, url } = form.getValues();
-    if (!title || !url) {
-      toast({
-        variant: "destructive",
-        title: "Cannot Suggest Tags",
-        description: "Please enter a title and URL before suggesting tags.",
-      });
-      return;
-    }
-    startSuggestionTransition(async () => {
-      const result = await suggestTagsAction({ title, url });
-      if (result.error) {
-        toast({
-          variant: "destructive",
-          title: "Suggestion Failed",
-          description: result.error,
-        });
-      } else if (result.tags) {
-        const currentTags = new Set(form.getValues("tags") || []);
-        result.tags.forEach(tag => currentTags.add(tag));
-        form.setValue("tags", Array.from(currentTags));
-      }
-    });
-  };
-
   function onSubmit(values: z.infer<typeof formSchema>) {
     const itemData = values.type === 'bookmark'
-        ? { type: 'bookmark' as const, title: values.title, url: values.url!, tags: values.tags || [] }
+        ? { type: 'bookmark' as const, title: values.title, url: values.url! }
         : { type: 'folder' as const, title: values.title };
 
     onItemSaved(itemData as FormValues);
@@ -177,53 +142,19 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
             />
 
             {itemType === 'bookmark' && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="url"
-                  render={({ field }) => (
-                      <FormItem>
-                      <FormLabel>URL</FormLabel>
-                      <FormControl>
-                          <Input placeholder="example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="tags"
-                  render={({ field }) => (
+              <FormField
+                control={form.control}
+                name="url"
+                render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-center justify-between">
-                        <FormLabel>Tags</FormLabel>
-                        <Button type="button" size="sm" variant="outline" onClick={handleSuggestTags} disabled={isSuggesting}>
-                           {isSuggesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                           Suggest Tags
-                        </Button>
-                      </div>
-                      <FormControl>
-                          <Input
-                            placeholder="Add tags, separated by commas"
-                            value={field.value?.join(', ') || ''}
-                            onChange={(e) => {
-                              const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
-                              field.onChange(tags);
-                            }}
-                          />
-                      </FormControl>
-                      <div className="flex flex-wrap gap-1 pt-1">
-                          {field.value?.map((tag, index) => (
-                              <Badge key={index} variant="secondary">{tag}</Badge>
-                          ))}
-                      </div>
-                      <FormMessage />
+                    <FormLabel>URL</FormLabel>
+                    <FormControl>
+                        <Input placeholder="example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
                     </FormItem>
-                  )}
-                />
-              </>
+                )}
+              />
             )}
 
             <DialogFooter className="pt-4">

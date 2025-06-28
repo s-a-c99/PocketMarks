@@ -17,7 +17,6 @@ The core principle of PocketMarks is **total user control**. Your bookmarks are 
 - **Robust Import/Export:** Import from any browser and export all or a selection of your bookmarks to a standard HTML file. This is perfect for backups, sharing, or creating curated context files for AI projects.
 - **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists and asks for confirmation.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
-- **(Optional) AI-Powered Tagging:** If you choose to enable it, an AI agent can suggest relevant tags for your bookmarks, making organization even faster.
 
 ## Getting Started: Choose Your Path
 
@@ -64,18 +63,6 @@ This option is for users who want to access their bookmarks from multiple device
 5.  Navigate to that URL to access your private, online version of PocketMarks.
 
 ---
-
-### (Optional) Enabling AI-Powered Tag Suggestions
-
-If you've deployed to Vercel (Option 2), you can optionally enable the AI tagging feature. This feature sends the URL and title of a bookmark to Google's AI to suggest tags.
-
-**Privacy Note:** Enabling this feature means the specific bookmark data you request tags for will be sent to Google. This is a trade-off between privacy and convenience.
-
-To enable it:
-1.  Sign up for a free Google AI Studio account to get an API key.
-2.  In your Vercel project dashboard, go to "Settings" -> "Environment Variables".
-3.  Add a new variable named `GOOGLE_API_KEY` and paste your key into the value field.
-4.  Save and redeploy your application. The "Suggest Tags" button will now be active in the app.
 
 ## How to Sync Bookmarks Across Devices
 
