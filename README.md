@@ -2,7 +2,7 @@
 
 PocketMarks is a flexible, user-friendly, and privacy-first bookmarking utility designed to give you full control over your data. It adapts to your needs, providing a clean, fast, and modern interface to manage, organize, and access your bookmarks.
 
-<img src="https://placehold.co/800x400.png" data-ai-hint="app screenshot" alt="PocketMarks Screenshot" />
+<img src="public/logo.png" data-ai-hint="app screenshot" alt="PocketMarks Screenshot" />
 
 ## Philosophy: You Choose Your Path
 
