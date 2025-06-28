@@ -39,8 +39,8 @@ This is the recommended path for most users. Your data will never leave your com
     ```
 3.  **Set Up Credentials:** Create a new file named `.env.local` in the root of the project. This file will hold your private username and password. Add the following lines, replacing the example values:
     ```
-    POCKETMARKS_USERNAME=user
-    POCKETMARKS_PASSWORD=test1
+    POCKETMARKS_USERNAME=write_your_name_here
+    POCKETMARKS_PASSWORD=write_your_password_here
     ```
     This file is included in `.gitignore` and will not be committed to your repository.
 4.  **Run the App:**
