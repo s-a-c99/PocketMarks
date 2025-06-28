@@ -22,15 +22,15 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
 
   return (
     <TooltipProvider delayDuration={300}>
-      <Card className={cn("transition-all hover:shadow-lg flex flex-col justify-between bg-primary/10 hover:bg-primary/20 border-2 border-primary/30")}>
+      <Card className={cn("transition-all hover:shadow-lg flex flex-col justify-between bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 p-2 gap-1")}>
         <div
           className="flex-grow cursor-pointer"
           onClick={() => onNavigate(id)}
         >
-          <CardHeader className="flex flex-row items-start gap-2 p-3 pb-1 space-y-0">
+          <CardHeader className="flex flex-row items-start gap-2 p-0 space-y-0">
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <div className="mt-1">
+                    <div>
                         <Checkbox
                             id={`select-${id}`}
                             checked={isSelected}
@@ -45,19 +45,19 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                     <FolderIcon className="h-5 w-5 text-primary shrink-0" />
-                    <CardTitle className="font-headline text-base font-semibold text-left leading-tight">
+                    <CardTitle className="font-headline text-sm font-semibold text-left leading-tight">
                         {title}
                     </CardTitle>
                 </div>
             </div>
           </CardHeader>
-          <CardContent className="px-3 pt-0 pb-2">
+          <CardContent className="p-0">
             <p className="text-xs text-muted-foreground/90 ml-6">
                 {folder.children.length} items
             </p>
           </CardContent>
         </div>
-        <CardFooter className="flex justify-end gap-1 p-2 pt-1">
+        <CardFooter className="flex justify-end gap-1 p-0">
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(folder); }}>

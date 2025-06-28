@@ -27,12 +27,12 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
 
   return (
     <TooltipProvider delayDuration={300}>
-      <Card className="transition-all hover:shadow-md flex flex-col justify-between">
+      <Card className="transition-all hover:shadow-md flex flex-col justify-between p-2 gap-1">
         <div className="flex-grow">
-          <CardHeader className="flex flex-row items-start gap-2 p-3 pb-1 space-y-0">
+          <CardHeader className="flex flex-row items-start gap-2 p-0 space-y-0">
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <div className="mt-1">
+                    <div>
                       <Checkbox
                         id={`select-${id}`}
                         checked={isSelected}
@@ -49,12 +49,12 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
                 rel="noopener noreferrer"
                 className="flex-1 min-w-0"
             >
-                <CardTitle className="font-headline text-base font-semibold hover:text-primary leading-tight">
+                <CardTitle className="font-headline text-sm font-semibold hover:text-primary leading-tight">
                   {title}
                 </CardTitle>
             </a>
           </CardHeader>
-          <CardContent className="px-3 pb-2 pt-0">
+          <CardContent className="p-0">
             <Tooltip>
               <TooltipTrigger asChild>
                  <a href={url} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground/90 truncate ml-6 hover:underline">
@@ -67,7 +67,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
             </Tooltip>
           </CardContent>
         </div>
-        <CardFooter className="flex justify-end gap-1 p-2 pt-1">
+        <CardFooter className="flex justify-end gap-1 p-0">
            <Tooltip>
               <TooltipTrigger asChild>
                   <Button asChild variant="ghost" size="icon" className="h-7 w-7">
