@@ -25,9 +25,7 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
 - **(Optional) AI-Powered Tag Suggestions:** By providing your own Google AI API key, you can enable an agent to automatically suggest relevant tags for your bookmarks, making organization even faster.
 
-## Getting Started: Choose Your Path
-
-PocketMarks is flexible. You can run it entirely on your local machine for maximum privacy, or deploy your own private version to the cloud for access from anywhere. Choose the path that's right for you.
+## Getting Started
 
 ---
 
