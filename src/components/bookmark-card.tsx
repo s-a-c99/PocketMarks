@@ -27,12 +27,22 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
 
   return (
     <TooltipProvider delayDuration={300}>
-      <Card className="transition-all hover:shadow-md flex flex-col justify-between p-2 gap-1">
-        <div className="flex-grow">
-          <CardHeader className="flex flex-row items-start gap-2 p-0 space-y-0">
+      <Card className="transition-all hover:shadow-md flex flex-col justify-between p-2">
+        <div className="flex-grow flex flex-col gap-1">
+          <CardHeader className="flex flex-row items-start justify-between gap-4 p-0 space-y-0">
+            <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-0"
+            >
+                <CardTitle className="font-headline text-xs font-semibold hover:text-primary leading-tight">
+                  {title}
+                </CardTitle>
+            </a>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <div>
+                    <div onClick={(e) => e.stopPropagation()} className="flex items-center h-4">
                       <Checkbox
                         id={`select-${id}`}
                         checked={isSelected}
@@ -43,21 +53,11 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
                 </TooltipTrigger>
                 <TooltipContent><p>Select bookmark</p></TooltipContent>
             </Tooltip>
-            <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 min-w-0"
-            >
-                <CardTitle className="font-headline text-sm font-semibold hover:text-primary leading-tight">
-                  {title}
-                </CardTitle>
-            </a>
           </CardHeader>
           <CardContent className="p-0">
             <Tooltip>
               <TooltipTrigger asChild>
-                 <a href={url} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground/90 truncate ml-6 hover:underline">
+                 <a href={url} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground/90 truncate hover:underline">
                     {url.replace(/^https?:\/\/(www\.)?/, '')}
                 </a>
               </TooltipTrigger>
@@ -67,7 +67,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
             </Tooltip>
           </CardContent>
         </div>
-        <CardFooter className="flex justify-end gap-1 p-0">
+        <CardFooter className="flex justify-end gap-1 p-0 pt-2">
            <Tooltip>
               <TooltipTrigger asChild>
                   <Button asChild variant="ghost" size="icon" className="h-7 w-7">
