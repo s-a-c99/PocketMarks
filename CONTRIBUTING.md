@@ -6,8 +6,7 @@ First off, thank you for considering contributing to PocketMarks! Your help is g
 
 ### Reporting Bugs
 
-Before reporting a bug, please search the existing issues on the project's GitHub repository to see if someone has already reported it. The link to the issues page will be `https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/issues`. You will need to replace the placeholders with the actual repository URL.
-
+Before reporting a bug, please search the existing issues on the project's GitHub repository to see if someone has already reported it. The link to the issues page will be `https://github.com/s-a-c99/PocketMarks/issues.md`.
 If you can't find an existing issue, please open a new one. In your report, be sure to include:
 - A clear and descriptive title.
 - A detailed description of the problem.
