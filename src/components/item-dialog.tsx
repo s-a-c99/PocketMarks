@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@radix-ui/react-zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";

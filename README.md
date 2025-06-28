@@ -1,12 +1,18 @@
 # PocketMarks - Your Personal Bookmark Hub
 
-PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utility designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage, organize, and access your bookmarks.
+PocketMarks is a flexible, user-friendly, and privacy-first bookmarking utility designed to give you full control over your data. It adapts to your needs, providing a clean, fast, and modern interface to manage, organize, and access your bookmarks.
 
 <img src="https://placehold.co/800x400.png" data-ai-hint="app screenshot" alt="PocketMarks Screenshot" />
 
-## Philosophy: You Own Your Data
+## Philosophy: You Choose Your Path
 
-The core principle of PocketMarks is **total user control**. Your bookmarks are stored in a simple `bookmarks.json` file on your machine or your private cloud instance, giving you full ownership. You decide where your data goes.
+The core principle of PocketMarks is **total user control**. You decide where your data lives and what features you enable. Choose the path that's right for you:
+
+-   **Run Locally (Maximum Privacy):** The simplest and most private option. Your data never leaves your computer.
+-   **Deploy to the Cloud (Access Anywhere):** Host your own private version on Vercel for free to access your bookmarks from any device.
+-   **Enable AI (Optional):** On either setup, you can optionally provide your own Google AI API key to unlock smart features like automatic tag suggestions.
+
+Your bookmarks are always stored in a simple `bookmarks.json` file that you own, whether it's on your machine or your private cloud instance.
 
 ## Features
 
