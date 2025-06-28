@@ -5,6 +5,7 @@ export type Bookmark = {
   url: string;
   createdAt: string;
   isFavorite?: boolean;
+  tags?: string[];
 };
 
 export type Folder = {

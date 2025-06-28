@@ -1,29 +1,29 @@
 # PocketMarks - Your Personal Bookmark Hub
 
-PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utility designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage your bookmarks, organize them into folders, and keep your collection tidy and up-to-date.
+PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utility designed for users who want full control over their data. It provides a clean, fast, and modern interface to manage, organize, and access your bookmarks.
 
 <img src="https://placehold.co/800x400.png" data-ai-hint="app screenshot" alt="PocketMarks Screenshot" />
 
 ## Philosophy: You Own Your Data
 
-The core principle of PocketMarks is **total user control**. There are no cloud servers and no hidden data synchronization by default. You own your data, and you decide where it goes. Your bookmarks are stored in a simple `bookmarks.json` file, giving you full ownership.
+The core principle of PocketMarks is **total user control**. Your bookmarks are stored in a simple `bookmarks.json` file on your machine or your private cloud instance, giving you full ownership. You decide where your data goes.
 
 ## Features
 
 - **Organize Your Links:** Create bookmarks and nested folders to keep your links organized.
 - **Modern Interface:** A clean and responsive UI with both Light and Dark modes.
 - **Mark Favorites:** Use the star icon to mark your most important bookmarks for quick access.
-- **Robust Import/Export:**
-  - Import bookmarks from standard HTML files exported by any browser.
-  - Choose to **merge** new links with your existing collection or replace it entirely.
-  - A comparison view shows you exactly which new bookmarks will be added during a merge.
-  - Export all or just a selection of your bookmarks back to a standard HTML file. This is perfect for backups, sharing, or providing curated context files for AI projects.
-- **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists in your collection and asks for confirmation.
+- **Intelligent Merge:** When importing, PocketMarks detects which links are new, preventing duplicates and allowing you to merge collections cleanly.
+- **Robust Import/Export:** Import from any browser and export all or a selection of your bookmarks to a standard HTML file. This is perfect for backups, sharing, or creating curated context files for AI projects.
+- **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists and asks for confirmation.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
+- **(Optional) AI-Powered Tagging:** If you choose to enable it, an AI agent can suggest relevant tags for your bookmarks, making organization even faster.
 
-## Getting Started
+## Getting Started: Choose Your Path
 
 PocketMarks is flexible. You can run it entirely on your local machine for maximum privacy, or deploy your own private version to the cloud for access from anywhere. Choose the path that's right for you.
+
+---
 
 ### Option 1: Run Locally (Maximum Privacy & Simplicity)
 This is the recommended path for most users. Your data will never leave your computer.
@@ -46,8 +46,12 @@ This is the recommended path for most users. Your data will never leave your com
 5.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
     **Tip:** Bookmark this address in your browser for easy access!
 
+---
+
 ### Option 2: Deploy to the Cloud (Access Anywhere - Free)
 This option is for users who want to access their bookmarks from multiple devices (like a phone or tablet). It involves deploying your own private copy of PocketMarks to a free cloud hosting service called Vercel.
+
+**Privacy Note:** With this method, your app runs on Vercel's servers. While your instance is private and Vercel's privacy policy prohibits them from accessing your data, the highest level of absolute privacy is achieved with local hosting (Option 1).
 
 **Requirements:** This process requires creating a free account on both **GitHub** and **Vercel**.
 
@@ -58,6 +62,20 @@ This option is for users who want to access their bookmarks from multiple device
 3.  Vercel will then ask you to configure the project. You must enter a `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`. These are the credentials you will use to log into **your** PocketMarks app.
 4.  Click **"Deploy"**. Vercel will build and deploy the application, giving you a unique URL (e.g., `my-pocketmarks-hub.vercel.app`).
 5.  Navigate to that URL to access your private, online version of PocketMarks.
+
+---
+
+### (Optional) Enabling AI-Powered Tag Suggestions
+
+If you've deployed to Vercel (Option 2), you can optionally enable the AI tagging feature. This feature sends the URL and title of a bookmark to Google's AI to suggest tags.
+
+**Privacy Note:** Enabling this feature means the specific bookmark data you request tags for will be sent to Google. This is a trade-off between privacy and convenience.
+
+To enable it:
+1.  Sign up for a free Google AI Studio account to get an API key.
+2.  In your Vercel project dashboard, go to "Settings" -> "Environment Variables".
+3.  Add a new variable named `GOOGLE_API_KEY` and paste your key into the value field.
+4.  Save and redeploy your application. The "Suggest Tags" button will now be active in the app.
 
 ## How to Sync Bookmarks Across Devices
 
@@ -112,6 +130,7 @@ If you need to do a major reorganization of your bookmarks (moving many items be
 - **UI:** [React](https://reactjs.org/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **Components:** [Shadcn/UI](https://ui.shadcn.com/)
+- **AI:** [Google Genkit](https://firebase.google.com/docs/genkit)
 
 ---
 

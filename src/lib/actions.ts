@@ -17,6 +17,7 @@ import {
   toggleFavoriteStatus
 } from './bookmark-service';
 import type { BookmarkItem } from '@/types';
+import { suggestTags, type SuggestTagsInput } from '@/ai/flows/suggest-tags';
 
 const SESSION_COOKIE_NAME = 'pocketmarks_session';
 
@@ -147,4 +148,17 @@ export async function exportSelectedBookmarksAction(ids: string[]): Promise<stri
 export async function toggleFavoriteAction(id: string) {
     await toggleFavoriteStatus(id);
     revalidatePath('/bookmarks');
+}
+
+export async function suggestTagsAction(input: SuggestTagsInput): Promise<{ tags?: string[]; error?: string }> {
+  if (!process.env.GOOGLE_API_KEY) {
+    return { error: "AI features are not configured on the server." };
+  }
+  try {
+    const result = await suggestTags(input);
+    return { tags: result.tags };
+  } catch (e) {
+    console.error("Tag suggestion failed:", e);
+    return { error: "Failed to get suggestions from the AI." };
+  }
 }
