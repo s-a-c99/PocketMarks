@@ -18,7 +18,6 @@ The core principle of PocketMarks is **total user control**. There are no cloud 
   - Choose to **merge** new links with your existing collection or replace it entirely.
   - A comparison view shows you exactly which new bookmarks will be added during a merge.
   - Export all or just a selection of your bookmarks back to a standard HTML file, perfect for backups, sharing, or providing curated context files for AI projects.
-- **Dead Link Checker:** Scan your entire collection to find and flag links that are no longer working. Folders containing dead links are also highlighted for easy cleanup.
 - **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists in your collection and asks for confirmation.
 - **Privacy First:** No external tracking or AI API calls. All your data stays within the application.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.

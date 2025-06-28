@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown, Search, Star, Ban, Trash2, ShieldX } from "lucide-react";
+import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder, Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -19,7 +19,6 @@ import {
   importBookmarksAction,
   exportBookmarksAction,
   exportSelectedBookmarksAction,
-  checkDeadLinksAction,
   toggleFavoriteAction,
   deleteSelectedItemsAction,
 } from "@/lib/actions";
@@ -41,7 +40,6 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { DuplicateDialog } from "./duplicate-dialog";
 
 
@@ -160,11 +158,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [itemsToCompare, setItemsToCompare] = useState<BookmarkItem[]>([]);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [pendingItem, setPendingItem] = useState<Omit<Bookmark, 'id' | 'children' | 'createdAt'> | null>(null);
-
-
-  const [isCheckingLinks, setIsCheckingLinks] = useState(false);
-  const [linkStatuses, setLinkStatuses] = useState<Record<string, string>>({});
-  const [folderStatuses, setFolderStatuses] = useState<Record<string, boolean>>({});
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('date-desc');
@@ -339,39 +332,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         });
     });
   };
-
-  const handleCheckLinks = () => {
-    setIsCheckingLinks(true);
-    setFolderStatuses({});
-    startTransition(async () => {
-        const statuses = await checkDeadLinksAction();
-        setLinkStatuses(statuses);
-        
-        const deadFolders: Record<string, boolean> = {};
-        const checkForDeadLinksRecursive = (currentItems: BookmarkItem[]): boolean => {
-            let hasDeadLinks = false;
-            for (const item of currentItems) {
-                if (item.type === 'bookmark') {
-                    if (statuses[item.id] && statuses[item.id] !== 'ok') {
-                        hasDeadLinks = true;
-                    }
-                } else if (item.type === 'folder') {
-                    if (checkForDeadLinksRecursive(item.children)) {
-                        deadFolders[item.id] = true;
-                        hasDeadLinks = true;
-                    }
-                }
-            }
-            return hasDeadLinks;
-        };
-
-        checkForDeadLinksRecursive(items);
-        setFolderStatuses(deadFolders);
-
-        setIsCheckingLinks(false);
-        toast({ title: "Link check complete", description: "Potentially dead links have been marked." });
-    });
-  };
   
   const downloadHtmlFile = (htmlContent: string, filename: string) => {
       if (htmlContent) {
@@ -484,20 +444,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         toggleFavoriteAction(id);
     });
   }
-
-  const handleSelectDeadLinks = () => {
-    const deadLinkIds = Object.entries(linkStatuses)
-      .filter(([, status]) => status !== 'ok')
-      .map(([id]) => id);
-    
-    if (deadLinkIds.length === 0) {
-      toast({ title: "No dead links to select", description: "All checked links appear to be working." });
-      return;
-    }
-
-    setSelectedIds(new Set(deadLinkIds));
-    toast({ title: `${deadLinkIds.length} dead link(s) selected`, description: "You can now delete them all at once." });
-  };
   
   return (
     <div className="w-full">
@@ -514,20 +460,20 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               </SelectContent>
             </Select>
 
-            <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+            <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending}>
                 <Plus className="mr-2 h-4 w-4" /> Add Bookmark
             </Button>
-            <Button onClick={handleAddNewFolder} variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+            <Button onClick={handleAddNewFolder} variant="outline" className="font-headline h-11" disabled={isPending}>
                 <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
             </Button>
             
             {selectedIds.size > 0 && (
               <>
-                <Button variant="outline" className="font-headline h-11" onClick={() => setSelectedIds(new Set())} disabled={isPending || isCheckingLinks}>
+                <Button variant="outline" className="font-headline h-11" onClick={() => setSelectedIds(new Set())} disabled={isPending}>
                   <Ban className="mr-2 h-4 w-4" />
                   Clear Selection ({selectedIds.size})
                 </Button>
-                <Button variant="destructive" className="font-headline h-11" onClick={() => setIsConfirmingMultiDelete(true)} disabled={isPending || isCheckingLinks}>
+                <Button variant="destructive" className="font-headline h-11" onClick={() => setIsConfirmingMultiDelete(true)} disabled={isPending}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Selected
                 </Button>
@@ -540,7 +486,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-11 text-base w-full"
-                  disabled={isPending || isCheckingLinks}
+                  disabled={isPending}
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             </div>
@@ -548,7 +494,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             <div className="flex gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="font-headline h-11" disabled={isPending || isCheckingLinks}>
+                  <Button variant="outline" className="font-headline h-11" disabled={isPending}>
                     Import / Export <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -560,18 +506,11 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                     Replace from file...
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleExport} disabled={isPending || isCheckingLinks}>Export all...</DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportSelected} disabled={isPending || isCheckingLinks || selectedIds.size === 0}>Export selected...</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExport} disabled={isPending}>Export all...</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportSelected} disabled={isPending || selectedIds.size === 0}>Export selected...</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button variant="outline" className="font-headline h-11" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
-                  {isCheckingLinks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2Off className="mr-2 h-4 w-4" />}
-                  Check for dead links
-              </Button>
-              <Button variant="outline" className="font-headline h-11" onClick={handleSelectDeadLinks} disabled={isCheckingLinks || Object.keys(linkStatuses).length === 0}>
-                  <ShieldX className="mr-2 h-4 w-4" /> Select Dead Links
-              </Button>
               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
             </div>
         </div>
@@ -590,13 +529,11 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                             onNavigate={setCurrentFolderId}
                             isSelected={selectedIds.has(item.id)}
                             onSelectionChange={handleSelectionChange}
-                            hasDeadLink={!!folderStatuses[item.id]}
                         />
                     ) : (
                         <BookmarkCard
                             key={item.id}
                             bookmark={item}
-                            status={linkStatuses[item.id]}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
                             onToggleFavorite={handleToggleFavorite}

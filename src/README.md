@@ -18,7 +18,6 @@ The core principle of PocketMarks is **total user control**. There are no cloud 
   - Choose to **merge** new links with your existing collection or replace it entirely.
   - A comparison view shows you exactly which new bookmarks will be added during a merge.
   - Export all or just a selection of your bookmarks back to a standard HTML file, perfect for backups, sharing, or providing curated context files for AI projects.
-- **Dead Link Checker:** Scan your entire collection to find and flag links that are no longer working. Folders containing dead links are also highlighted for easy cleanup.
 - **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists in your collection and asks for confirmation.
 - **Privacy First:** No external tracking or AI API calls. All your data stays within the application.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
@@ -99,8 +98,6 @@ Once PocketMarks is your central, organized hub, you can sync this clean collect
 
 The browser will **automatically** read the file and recreate the exact structure of folders and links from your PocketMarks collection. You do not need to add them one by one. This ensures every browser is a perfect mirror of your curated hub.
 
-#### Pro Tip: Reordering Bookmarks
-For extensive reordering of many bookmarks and folders, your browser's built-in bookmark manager is often the fastest tool, as it usually supports drag-and-drop. Once you're happy with the new structure, export the HTML file from your browser and use the **"Replace from file..."** option in PocketMarks to instantly update your central hub.
 
 ## Password Recovery
 

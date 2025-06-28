@@ -1,6 +1,6 @@
 "use client";
 
-import { Folder as FolderIcon, Pencil, Trash2, ShieldAlert } from "lucide-react";
+import { Folder as FolderIcon, Pencil, Trash2 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,10 +15,9 @@ type FolderCardProps = {
   onNavigate: (id: string) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, checked: boolean) => void;
-  hasDeadLink?: boolean;
 };
 
-export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange, hasDeadLink }: FolderCardProps) {
+export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange }: FolderCardProps) {
   const { id, title } = folder;
 
   return (
@@ -27,7 +26,6 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
         className={cn(
             "transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer",
             "bg-primary/10 hover:bg-primary/20 border-2 border-primary/30",
-            hasDeadLink && "border-destructive bg-destructive/10"
         )}
         onClick={() => onNavigate(id)}
       >
@@ -41,16 +39,6 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
                 onClick={(e) => e.stopPropagation()}
                 aria-label={`Select folder ${title}`}
               />
-               {hasDeadLink && (
-                 <Tooltip>
-                    <TooltipTrigger>
-                        <ShieldAlert className="h-4 w-4 text-destructive shrink-0" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>This folder contains one or more dead links.</p>
-                    </TooltipContent>
-                 </Tooltip>
-               )}
               <FolderIcon className="h-5 w-5 text-primary shrink-0" />
               <Tooltip>
                 <TooltipTrigger asChild>

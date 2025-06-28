@@ -12,7 +12,6 @@ import {
   exportSelectedBookmarks, 
   mergeBookmarks,
   createBackup,
-  checkAllLinks,
   parseAndCompareBookmarks,
   parseBookmarks,
   toggleFavoriteStatus
@@ -143,10 +142,6 @@ export async function exportBookmarksAction(): Promise<string> {
 
 export async function exportSelectedBookmarksAction(ids: string[]): Promise<string> {
     return await exportSelectedBookmarks(ids);
-}
-
-export async function checkDeadLinksAction(): Promise<Record<string, string>> {
-  return await checkAllLinks();
 }
 
 export async function toggleFavoriteAction(id: string) {
