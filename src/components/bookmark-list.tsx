@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2, Import, Export } from "lucide-react";
+import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2, Import, Download } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder, Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -508,11 +509,11 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleExport} disabled={isPending}>
-                    <Export className="mr-2 h-4 w-4" />
+                    <Download className="mr-2 h-4 w-4" />
                     Export all...
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportSelected} disabled={isPending || selectedIds.size === 0}>
-                    <Export className="mr-2 h-4 w-4" />
+                    <Download className="mr-2 h-4 w-4" />
                     Export selected...
                   </DropdownMenuItem>
                 </DropdownMenuContent>
