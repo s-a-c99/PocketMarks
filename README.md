@@ -120,8 +120,10 @@ Once PocketMarks is your central, organized hub, you can sync this clean collect
 
 The browser will **automatically** read the file and recreate the exact structure of folders and links from your PocketMarks collection. You do not need to add them one by one. This ensures every browser is a perfect mirror of your curated hub.
 
-### Pro Tip: Reordering Bookmarks
-If you need to do a major reorganization of your bookmarks (moving many items between folders), the fastest way is to do it directly in your main browser's bookmark manager, which is optimized for that task. Once you're done, simply use the "Replace from file..." option in PocketMarks to update your central hub with the new, clean structure.
+## Pro Tips
+
+-   **Reordering Bookmarks:** If you need to do a major reorganization of your bookmarks (moving many items between folders), the fastest way is to do it directly in your main browser's bookmark manager, which is optimized for that task. Once you're done, simply use the "Replace from file..." option in PocketMarks to update your central hub with the new, clean structure.
+-   **Create Curated Context for AI Projects:** Use the "Export selected..." feature to download a clean, focused HTML file, then upload this file as a knowledge base.
 
 ## Password Recovery
 
