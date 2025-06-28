@@ -3,7 +3,7 @@
 ## Core Features:
 - Secure Access: Secure, password-protected access to personal bookmarks.
 - Flexible Hosting: Multiple usage paths:
-        -- Local-First: Run on a local machine for maximum privacy.
+        - Local-First: Run on a local machine for maximum privacy.
         -- Cloud-Hosted: Deploy a private instance to Vercel for cross-device access.
 - Advanced Bookmark Management:
         -- Create, edit, and delete bookmarks and nested folders.
