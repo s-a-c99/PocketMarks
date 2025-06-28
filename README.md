@@ -6,7 +6,7 @@ PocketMarks is a self-hosted, user-friendly, and privacy-first bookmarking utili
 
 ## Philosophy: You Own Your Data
 
-The core principle of PocketMarks is **total user control**. There are no cloud servers and no hidden data synchronization. You own your data, and you decide where it goes. Your bookmarks are stored in a simple `bookmarks.json` file, giving you full ownership.
+The core principle of PocketMarks is **total user control**. There are no cloud servers and no hidden data synchronization by default. You own your data, and you decide where it goes. Your bookmarks are stored in a simple `bookmarks.json` file, giving you full ownership.
 
 ## Features
 
@@ -15,27 +15,20 @@ The core principle of PocketMarks is **total user control**. There are no cloud 
 - **Mark Favorites:** Use the star icon to mark your most important bookmarks for quick access.
 - **Robust Import/Export:**
   - Import bookmarks from standard HTML files exported by any browser.
-  - Choose to merge new links with your existing collection or replace it entirely.
+  - Choose to **merge** new links with your existing collection or replace it entirely.
   - A comparison view shows you exactly which new bookmarks will be added during a merge.
-  - Export all or just a selection of your bookmarks back to a standard HTML file.
+  - Export all or just a selection of your bookmarks back to a standard HTML file, perfect for backups, sharing, or providing curated context files for AI projects.
 - **Dead Link Checker:** Scan your entire collection to find and flag links that are no longer working. Folders containing dead links are also highlighted for easy cleanup.
 - **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists in your collection and asks for confirmation.
 - **Privacy First:** No external tracking or AI API calls. All your data stays within the application.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
 
-## Tech Stack
-
-- **Framework:** [Next.js](https://nextjs.org/) (App Router)
-- **Language:** [TypeScript](https://www.typescriptlang.org/)
-- **UI:** [React](https://reactjs.org/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Components:** [Shadcn/UI](https://ui.shadcn.com/)
-
----
-
 ## Getting Started
 
-PocketMarks is designed to run locally on your computer, ensuring maximum privacy and simplicity. Your data will never leave your machine.
+PocketMarks is flexible. You can run it entirely on your local machine for maximum privacy, or deploy your own private version to the cloud for access from anywhere. Choose the path that's right for you.
+
+### Option 1: Run Locally (Maximum Privacy & Simplicity)
+This is the recommended path for most users. Your data will never leave your computer.
 
 1.  **Download the Code:** Download the project files from this GitHub repository as a ZIP file.
 2.  **Install Dependencies:** Open a terminal in the project's root directory and run:
@@ -54,6 +47,19 @@ PocketMarks is designed to run locally on your computer, ensuring maximum privac
     ```
 5.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
     **Tip:** Bookmark this address in your browser for easy access!
+
+### Option 2: Deploy to the Cloud (Access Anywhere - Free)
+This option is for users who want to access their bookmarks from multiple devices (like a phone or tablet). It involves deploying your own private copy of PocketMarks to a free cloud hosting service called Vercel.
+
+**Requirements:** This process requires creating a free account on both **GitHub** and **Vercel**.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ffirebase%2Fgenkit-pocketmarks-agent-example&env=POCKETMARKS_USERNAME,POCKETMARKS_PASSWORD&envDescription=Enter%20a%20username%20and%20password%20to%20secure%20your%20PocketMarks%20instance.&project-name=pocketmarks-hub&repository-name=my-pocketmarks-hub)
+
+1.  **Click the "Deploy with Vercel" button above.**
+2.  You will be redirected to Vercel. It will prompt you to **sign up or log in, preferably using your GitHub account.** This is necessary for Vercel to create your personal copy of the code.
+3.  Vercel will then ask you to configure the project. You must enter a `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`. These are the credentials you will use to log into **your** PocketMarks app.
+4.  Click **"Deploy"**. Vercel will build and deploy the application, giving you a unique URL (e.g., `my-pocketmarks-hub.vercel.app`).
+5.  Navigate to that URL to access your private, online version of PocketMarks.
 
 ## How to Sync Bookmarks Across Devices
 
@@ -93,9 +99,21 @@ Once PocketMarks is your central, organized hub, you can sync this clean collect
 
 The browser will **automatically** read the file and recreate the exact structure of folders and links from your PocketMarks collection. You do not need to add them one by one. This ensures every browser is a perfect mirror of your curated hub.
 
+
 ## Password Recovery
 
-Since this is a self-hosted application, there is no traditional "forgot password" feature. You are in full control. Simply open the `.env.local` file on your computer to see the password you set.
+-   **For Local Instances:** You are in full control. Simply open the `.env.local` file on your computer to see the password you set.
+-   **For Vercel Deployments:** Log in to your Vercel account, navigate to your PocketMarks project settings, and view the "Environment Variables" to see the username and password you configured.
+
+## Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org/) (App Router)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **UI:** [React](https://reactjs.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Components:** [Shadcn/UI](https://ui.shadcn.com/)
+
+---
 
 ## Support the Project
 
