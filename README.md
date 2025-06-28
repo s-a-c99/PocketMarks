@@ -145,7 +145,7 @@ The browser will **automatically** read the file and recreate the exact structur
 
 If you find this project useful, please consider supporting its development. Thank you!
 
-- [Sponsor on GitHub](https://github.com/sponsors/YOUR_USERNAME)
+- [Sponsor on GitHub](https://github.com/sponsors/s-a-c99)
 - [Support on Patreon](https://patreon.com/YOUR_USERNAME)
 - [Donate via PayPal](https://paypal.me/YOUR_USERNAME)
 
