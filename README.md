@@ -17,6 +17,7 @@ The core principle of PocketMarks is **total user control**. Your bookmarks are 
 - **Robust Import/Export:** Import from any browser and export all or a selection of your bookmarks to a standard HTML file. This is perfect for backups, sharing, or creating curated context files for AI projects.
 - **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists and asks for confirmation.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
+- **(Optional) AI-Powered Tag Suggestions:** By providing your own Google AI API key, you can enable an agent to automatically suggest relevant tags for your bookmarks, making organization even faster.
 
 ## Getting Started: Choose Your Path
 
@@ -61,6 +62,19 @@ This option is for users who want to access their bookmarks from multiple device
 3.  Vercel will then ask you to configure the project. You must enter a `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`. These are the credentials you will use to log into **your** PocketMarks app.
 4.  Click **"Deploy"**. Vercel will build and deploy the application, giving you a unique URL (e.g., `my-pocketmarks-hub.vercel.app`).
 5.  Navigate to that URL to access your private, online version of PocketMarks.
+
+---
+
+### Optional: Enable AI Features
+To enable smart features like automatic tag suggestions, you need to provide the application with a Google AI API key. This is an optional step that enhances functionality but involves sending bookmark titles and URLs to an external service.
+
+1.  **Get a Google AI API Key:** Visit the [Google AI Studio](https://aistudio.google.com/app/apikey) to generate a free API key.
+2.  **Add the Key to Your Environment:**
+    *   **For Local Use (Option 1):** Open your `.env.local` file and add the following line, replacing `YOUR_API_KEY` with the key you just generated:
+        ```
+        GOOGLE_API_KEY=YOUR_API_KEY
+        ```
+    *   **For Vercel Deployments (Option 2):** In your Vercel project dashboard, go to "Settings" -> "Environment Variables". Add a new variable named `GOOGLE_API_KEY` and paste your key as the value.
 
 ---
 
@@ -117,7 +131,7 @@ If you need to do a major reorganization of your bookmarks (moving many items be
 - **UI:** [React](https://reactjs.org/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **Components:** [Shadcn/UI](https://ui.shadcn.com/)
-- **AI:** [Google Genkit](https://firebase.google.com/docs/genkit)
+- **AI:** [Google Genkit](https://firebase.google.com/docs/genkit) (Optional)
 
 ---
 

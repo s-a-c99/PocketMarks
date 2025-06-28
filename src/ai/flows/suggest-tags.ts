@@ -17,7 +17,7 @@ const SuggestTagsInputSchema = z.object({
 export type SuggestTagsInput = z.infer<typeof SuggestTagsInputSchema>;
 
 const SuggestTagsOutputSchema = z.object({
-  tags: z.array(z.string()).describe('An array of suggested tags.'),
+  tags: z.array(z.string()).describe('An array of 3 to 5 suggested tags.'),
 });
 export type SuggestTagsOutput = z.infer<typeof SuggestTagsOutputSchema>;
 
@@ -29,12 +29,11 @@ const prompt = ai.definePrompt({
   name: 'suggestTagsPrompt',
   input: {schema: SuggestTagsInputSchema},
   output: {schema: SuggestTagsOutputSchema},
-  prompt: `Suggest relevant tags for the following bookmark. Return ONLY the list of tags as a JSON array.
+  prompt: `Based on the title and URL of the bookmark provided, suggest a list of 3 to 5 relevant, one-word, lowercase tags.
 
 URL: {{{url}}}
 Title: {{{title}}}
-
-Tags:`,config: {
+`,config: {
     safetySettings: [
       {
         category: 'HARM_CATEGORY_HATE_SPEECH',

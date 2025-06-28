@@ -12,6 +12,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Bookmark } from "@/types";
 import { cn } from "@/lib/utils";
+import { Badge } from "./ui/badge";
 
 type BookmarkCardProps = {
   bookmark: Bookmark;
@@ -23,51 +24,53 @@ type BookmarkCardProps = {
 };
 
 export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange }: BookmarkCardProps) {
-  const { id, title, url, isFavorite } = bookmark;
+  const { id, title, url, isFavorite, tags } = bookmark;
 
   return (
     <TooltipProvider delayDuration={300}>
-      <Card className="transition-all hover:shadow-md flex flex-col justify-between p-2">
-        <div className="flex-grow flex flex-col gap-1">
-          <CardHeader className="flex flex-row items-start justify-between gap-4 p-0 space-y-0">
-            <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 min-w-0"
-            >
-                <CardTitle className="font-headline text-xs font-semibold hover:text-primary leading-tight">
-                  {title}
-                </CardTitle>
-            </a>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div onClick={(e) => e.stopPropagation()} className="flex items-center h-4">
-                      <Checkbox
-                        id={`select-${id}`}
-                        checked={isSelected}
-                        onCheckedChange={(checked) => onSelectionChange(id, !!checked)}
-                        aria-label={`Select ${title}`}
-                      />
-                    </div>
-                </TooltipTrigger>
-                <TooltipContent><p>Select bookmark</p></TooltipContent>
-            </Tooltip>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                 <a href={url} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground/90 truncate hover:underline">
-                    {url.replace(/^https?:\/\/(www\.)?/, '')}
-                </a>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{url}</p>
-              </TooltipContent>
-            </Tooltip>
-          </CardContent>
-        </div>
-        <CardFooter className="flex justify-end gap-1 p-0 pt-2">
+      <Card className="transition-all hover:shadow-md flex flex-col justify-between p-2 gap-1">
+        <CardHeader className="flex flex-row items-start justify-between gap-2 p-0 space-y-0">
+          <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 min-w-0"
+          >
+              <CardTitle className="font-headline text-xs font-semibold hover:text-primary leading-tight">
+                {title}
+              </CardTitle>
+          </a>
+          <div onClick={(e) => e.stopPropagation()} className="flex items-center h-4">
+            <Checkbox
+              id={`select-${id}`}
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelectionChange(id, !!checked)}
+              aria-label={`Select ${title}`}
+            />
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-0 flex-grow">
+          <Tooltip>
+            <TooltipTrigger asChild>
+                <a href={url} target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground/90 truncate hover:underline">
+                  {url.replace(/^https?:\/\/(www\.)?/, '')}
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{url}</p>
+            </TooltipContent>
+          </Tooltip>
+           {tags && tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+                {tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>
+                ))}
+            </div>
+          )}
+        </CardContent>
+        
+        <CardFooter className="flex justify-end gap-1 p-0">
            <Tooltip>
               <TooltipTrigger asChild>
                   <Button asChild variant="ghost" size="icon" className="h-7 w-7">

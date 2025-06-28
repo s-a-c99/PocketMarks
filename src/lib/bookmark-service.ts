@@ -202,6 +202,9 @@ const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
       } else if (anchor) { // It's a bookmark
         const url = anchor.getAttribute('HREF');
         const title = anchor.textContent || 'Untitled Bookmark';
+        const tagsAttr = anchor.getAttribute('TAGS');
+        const tags = tagsAttr ? tagsAttr.split(',').map(t => t.trim()).filter(Boolean) : [];
+
         if (url) {
           items.push({
             id: uuidv4(),
@@ -209,6 +212,7 @@ const parseBookmarksRecursive = (root: Element): BookmarkItem[] => {
             title: title,
             url: url,
             createdAt: createdAt,
+            tags: tags
           });
         }
       }
@@ -288,7 +292,9 @@ function bookmarksToHtml(items: BookmarkItem[], indentLevel = 0): string {
             html += bookmarksToHtml(item.children, indentLevel + 1);
             html += `${indent}    </DT>\n`;
         } else if (item.type === 'bookmark') {
-            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}" ${item.isFavorite ? 'ICON="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABeklEQVQ4y6WTv2vUYRzFP/e9u5v9uF0T0k2iSJGiQ0Mdd3FwUFP/gI6uro4uCg5OLlJw8C9QcHRydBM6dLAgWkrQP0DRZAmKXWzCzb3J3d3L3e4/5/D7fT7f7/f9fnkR/pI+qU6U9HPS/An0f03xS6bTqXRyYlOVSjVV4Uu1i+5wIM/z+TqZTPYwW5qAsW5gqA94q4vValVfENVEcUnEMdM0jZ2WAdVqNQU4M4E4M8GzLMs23RNKIMvyt4E0wRSRhJvQvQnETwLzXwTzI5IgyxZ/3AFbmkDGcf6hGDAunt0g3N7ePuL5/uprA0wNMOViOaA4EZmZ4G2l1TqM50xQxvGfqmI3jC0AisGkCdb7DwezwbA8+deE8wP9g64Qz88MhF7DsA/LFv/dAdmWeeA8wfbA8xbwFqB+fV7s2AnkUqmVj8NxT4PXIunvQPoJ6P8L8L9i+puAWL9WqsUaP/8cBSaZm6Y5n46S5f3AWRb/nQIWmRPLkP5gOm9SfZ3s5p9zPByfAXnWPf4e+BRqL/xS6ZSpfufqf0A+A5bJ5DkMsNxzLgAAAABJRU5ErkJggg=="' : ''}>${item.title}</A></DT>\n`;
+            const tagsAttribute = item.tags && item.tags.length > 0 ? ` TAGS="${item.tags.join(',')}"` : '';
+            const favoriteAttribute = item.isFavorite ? ' ICON="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAABeklEQVQ4y6WTv2vUYRzFP/e9u5v9uF0T0k2iSJGiQ0Mdd3FwUFP/gI6uro4uCg5OLlJw8C/QcHRydBM6dLAgWkrQP0DRZAmKXWzCzb3J3d3L3e4/5/D7fT7f7/f9fnkR/pI+qU6U9HPS/An0f03xS6bTqXRyYlOVSjVV4Uu1i+5wIM/z+TqZTPYwW5qAsW5gqA94q4vValVfENVEcUnEMdM0jZ2WAdVqNQU4M4E4M8GzLMs23RNKIMvyt4E0wRSRhJvQvQnETwLzXwTzI5IgyxZ/3AFbmkDGcf6hGDAunt0g3N7ePuL5/uprA0wNMOViOaA4EZmZ4G2l1TqM50xQxvGfqmI3jC0AisGkCdb7DwezwbA8+deE8wP9g64Qz88MhF7DsA/LFv/dAdmWeeA8wfbA8xbwFqB+fV7s2AnkUqmVj8NxT4PXIunvQPoJ6P8L8L9i+puAWL9WqsUaP/8cBSaZm6Y5n46S5f3AWRb/nQIWmRPLkP5gOm9SfZ3s5p9zPByfAXnWPf4e+BRqL/xS6ZSpfufqf0A+A5bJ5DkMsNxzLgAAAABJRU5ErkJggg=="' : '';
+            html += `${indent}    <DT><A HREF="${item.url}" ADD_DATE="${addDate}" LAST_MODIFIED="${addDate}"${favoriteAttribute}${tagsAttribute}>${item.title}</A></DT>\n`;
         }
     });
 

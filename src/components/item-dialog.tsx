@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@radix-ui/react-zod";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Sparkles, Loader2 } from "lucide-react";
 import type { BookmarkItem } from "@/types";
+import { suggestTagsAction } from "@/lib/actions";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   type: z.enum(["bookmark", "folder"]),
   title: z.string().min(1, "Title is required."),
   url: z.string().optional(),
+  tags: z.string().optional(),
 })
 .transform((data) => {
     if (data.type === 'bookmark' && data.url && !/^(https?|ftp):\/\//i.test(data.url)) {
@@ -44,6 +48,8 @@ type ItemDialogProps = {
 
 export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemDialogProps) {
   const [itemType, setItemType] = useState<'bookmark' | 'folder'>('bookmark');
+  const [isSuggesting, startSuggestionTransition] = useTransition();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,6 +57,7 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
       type: 'bookmark',
       title: "",
       url: "",
+      tags: ""
     },
   });
 
@@ -64,17 +71,46 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
             type: type,
             title: itemToEdit?.title || "",
             url: itemToEdit?.type === 'bookmark' ? itemToEdit.url : "",
+            tags: itemToEdit?.type === 'bookmark' ? (itemToEdit.tags || []).join(', ') : "",
         });
     }
   }, [itemToEdit, isOpen, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    const tagsArray = values.tags ? values.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     const itemData = values.type === 'bookmark'
-        ? { type: 'bookmark' as const, title: values.title, url: values.url! }
+        ? { type: 'bookmark' as const, title: values.title, url: values.url!, tags: tagsArray }
         : { type: 'folder' as const, title: values.title };
 
     onItemSaved(itemData as FormValues);
-    setIsOpen(false);
+  }
+
+  const handleSuggestTags = () => {
+    const { title, url } = form.getValues();
+    if (!title || !url) {
+        toast({
+            variant: "destructive",
+            title: "Suggestion Failed",
+            description: "Please provide a title and URL to suggest tags.",
+        });
+        return;
+    }
+    startSuggestionTransition(async () => {
+        const result = await suggestTagsAction({ title, url });
+        if (result.error) {
+            toast({
+                variant: "destructive",
+                title: "AI Suggestion Failed",
+                description: result.error,
+            });
+        } else if (result.tags) {
+            form.setValue('tags', result.tags.join(', '));
+            toast({
+                title: "Tags Suggested",
+                description: "AI-powered tags have been added.",
+            });
+        }
+    });
   }
 
   return (
@@ -85,7 +121,7 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
             {isEditing ? `Edit ${itemToEdit.type}` : 'Add New Item'}
           </DialogTitle>
           <DialogDescription>
-            {isEditing ? "Update the details of your item." : "Add a new bookmark or folder."}
+            {isEditing ? "Update the details of your item." : "Add a new bookmark or folder to your collection."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -142,19 +178,44 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
             />
 
             {itemType === 'bookmark' && (
-              <FormField
-                control={form.control}
-                name="url"
-                render={({ field }) => (
+              <>
+                <FormField
+                    control={form.control}
+                    name="url"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>URL</FormLabel>
+                        <FormControl>
+                            <Input placeholder="example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
                     <FormItem>
-                    <FormLabel>URL</FormLabel>
-                    <FormControl>
-                        <Input placeholder="example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                      <div className="flex justify-between items-center">
+                        <FormLabel>Tags (comma-separated)</FormLabel>
+                        <Button type="button" variant="outline" size="sm" onClick={handleSuggestTags} disabled={isSuggesting}>
+                            {isSuggesting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Sparkles className="mr-2 h-4 w-4" />
+                            )}
+                            Suggest
+                        </Button>
+                      </div>
+                      <FormControl>
+                        <Input placeholder="design, tools, inspiration" {...field} />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )}
-              />
+                  )}
+                />
+              </>
             )}
 
             <DialogFooter className="pt-4">
