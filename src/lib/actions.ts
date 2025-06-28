@@ -56,9 +56,16 @@ export async function saveItemAction(item: BookmarkItem, parentId: string | null
   revalidatePath('/bookmarks');
 }
 
-export async function deleteItemAction(id: string) {
-  await deleteItem(id);
-  revalidatePath('/bookmarks');
+export async function deleteItemAction(id: string): Promise<{ error?: string }> {
+  try {
+    await deleteItem(id);
+    revalidatePath('/bookmarks');
+    return {};
+  } catch (e) {
+    console.error("Failed to delete item:", e);
+    const message = e instanceof Error ? e.message : "An unknown error occurred.";
+    return { error: message };
+  }
 }
 
 type ImportPayload = {

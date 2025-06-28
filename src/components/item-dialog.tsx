@@ -11,7 +11,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { BookmarkItem } from "@/types";
-import { DuplicateDialog } from "./duplicate-dialog";
 
 const formSchema = z.object({
   type: z.enum(["bookmark", "folder"]),
@@ -42,13 +41,10 @@ type ItemDialogProps = {
   setIsOpen: (isOpen: boolean) => void;
   onItemSaved: (values: FormValues) => void;
   itemToEdit?: BookmarkItem | null;
-  onCheckForDuplicate: (url: string) => boolean;
 };
 
-export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit, onCheckForDuplicate }: ItemDialogProps) {
+export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemDialogProps) {
   const [itemType, setItemType] = useState<'bookmark' | 'folder'>('bookmark');
-  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
-  const [pendingItem, setPendingItem] = useState<FormValues | null>(null);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -73,125 +69,103 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit, onCheck
     }
   }, [itemToEdit, isOpen, form]);
 
-  const handleConfirmDuplicate = () => {
-    if (pendingItem) {
-        onItemSaved(pendingItem);
-    }
-    setShowDuplicateDialog(false);
-    setPendingItem(null);
-    setIsOpen(false);
-  }
-
   function onSubmit(values: z.infer<typeof formSchema>) {
     const itemData = values.type === 'bookmark'
         ? { type: 'bookmark' as const, title: values.title, url: values.url! }
         : { type: 'folder' as const, title: values.title };
-
-    if (itemData.type === 'bookmark' && !isEditing && onCheckForDuplicate(itemData.url)) {
-        setPendingItem(itemData);
-        setShowDuplicateDialog(true);
-        return;
-    }
 
     onItemSaved(itemData);
     setIsOpen(false);
   }
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[525px] bg-card">
-          <DialogHeader>
-            <DialogTitle className="font-headline text-primary">
-              {isEditing ? `Edit ${itemToEdit.type}` : 'Add New Item'}
-            </DialogTitle>
-            <DialogDescription>
-              {isEditing ? "Update the details of your item." : "Add a new bookmark or folder."}
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-              
-              {!isEditing && (
-                  <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                          <FormItem className="space-y-3">
-                          <FormLabel>Type</FormLabel>
-                          <FormControl>
-                              <RadioGroup
-                              onValueChange={(value) => {
-                                  field.onChange(value);
-                                  setItemType(value as 'bookmark' | 'folder');
-                              }}
-                              defaultValue={field.value}
-                              className="flex items-center space-x-4"
-                              >
-                              <FormItem className="flex items-center space-x-2 space-y-0">
-                                  <FormControl>
-                                  <RadioGroupItem value="bookmark" />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">Bookmark</FormLabel>
-                              </FormItem>
-                              <FormItem className="flex items-center space-x-2 space-y-0">
-                                  <FormControl>
-                                  <RadioGroupItem value="folder" />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">Folder</FormLabel>
-                              </FormItem>
-                              </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                          </FormItem>
-                      )}
-                  />
-              )}
-
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder={itemType === 'bookmark' ? "e.g. My Favorite Design Tool" : "e.g. Work Projects"} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {itemType === 'bookmark' && (
-                <>
-                  <FormField
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="sm:max-w-[525px] bg-card">
+        <DialogHeader>
+          <DialogTitle className="font-headline text-primary">
+            {isEditing ? `Edit ${itemToEdit.type}` : 'Add New Item'}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing ? "Update the details of your item." : "Add a new bookmark or folder."}
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+            
+            {!isEditing && (
+                <FormField
                     control={form.control}
-                    name="url"
+                    name="type"
                     render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>URL</FormLabel>
+                        <FormItem className="space-y-3">
+                        <FormLabel>Type</FormLabel>
                         <FormControl>
-                            <Input placeholder="example.com" {...field} />
+                            <RadioGroup
+                            onValueChange={(value) => {
+                                field.onChange(value);
+                                setItemType(value as 'bookmark' | 'folder');
+                            }}
+                            defaultValue={field.value}
+                            className="flex items-center space-x-4"
+                            >
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="bookmark" />
+                                </FormControl>
+                                <FormLabel className="font-normal">Bookmark</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="folder" />
+                                </FormControl>
+                                <FormLabel className="font-normal">Folder</FormLabel>
+                            </FormItem>
+                            </RadioGroup>
                         </FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
-                  />
-                </>
-              )}
+                />
+            )}
 
-              <DialogFooter className="pt-4">
-                <Button type="submit" className="font-headline">{isEditing ? "Save Changes" : "Add Item"}</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-      <DuplicateDialog
-        isOpen={showDuplicateDialog}
-        onCancel={() => setShowDuplicateDialog(false)}
-        onConfirm={handleConfirmDuplicate}
-      />
-    </>
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder={itemType === 'bookmark' ? "e.g. My Favorite Design Tool" : "e.g. Work Projects"} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {itemType === 'bookmark' && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="url"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel>URL</FormLabel>
+                      <FormControl>
+                          <Input placeholder="example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            <DialogFooter className="pt-4">
+              <Button type="submit" className="font-headline">{isEditing ? "Save Changes" : "Add Item"}</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

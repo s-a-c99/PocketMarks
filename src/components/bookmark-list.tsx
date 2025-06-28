@@ -81,7 +81,7 @@ function sortItems(items: BookmarkItem[], sortBy: string): BookmarkItem[] {
 
     switch (sortBy) {
       case 'date-desc':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return new Date(b.createdAt).getTime() - new Date(b.createdAt).getTime();
       case 'date-asc':
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       case 'alpha-asc':
@@ -128,6 +128,17 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
   
   return searchRecursive(items);
 }
+
+const deleteRecursiveClient = (items: BookmarkItem[], idToDelete: string): BookmarkItem[] => {
+    return items
+      .filter(item => item.id !== idToDelete)
+      .map(item => {
+        if (item.type === 'folder' && item.children) {
+          return { ...item, children: deleteRecursiveClient(item.children, idToDelete) };
+        }
+        return item;
+      });
+};
 
 
 export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] }) {
@@ -194,15 +205,28 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   const confirmDelete = () => {
     if (!itemToDelete) return;
+
+    const originalItems = items;
+    // Optimistic UI Update
+    setItems(currentItems => deleteRecursiveClient(currentItems, itemToDelete));
+    setItemToDelete(null);
+
     startTransition(() => {
-      deleteItemAction(itemToDelete).then(() => {
-        toast({ title: "Item deleted", description: "The item has been removed." });
-        setItemToDelete(null);
-        setSelectedIds(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(itemToDelete);
-            return newSet;
-        });
+      deleteItemAction(itemToDelete).then((result) => {
+        if (result?.error) {
+          toast({ variant: "destructive", title: "Deletion Failed", description: result.error });
+          setItems(originalItems); // Revert on error
+        } else {
+          toast({ title: "Item deleted", description: "The item has been removed." });
+          setSelectedIds(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(itemToDelete!);
+              return newSet;
+          });
+        }
+      }).catch(() => {
+        toast({ variant: "destructive", title: "Deletion Failed", description: "Could not connect to the server." });
+        setItems(originalItems); // Revert on error
       });
     });
   };
@@ -549,6 +573,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         setIsOpen={setIsDialogOpen}
         onItemSaved={handleDialogSubmit}
         itemToEdit={itemToEdit}
+        onCheckForDuplicate={checkForDuplicate}
       />
       <DuplicateDialog
         isOpen={showDuplicateDialog}
