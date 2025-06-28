@@ -123,6 +123,26 @@ export async function deleteItem(id: string): Promise<void> {
   await writeBookmarksFile(bookmarks);
 }
 
+function deleteItemsRecursive(items: BookmarkItem[], idsToDelete: Set<string>): BookmarkItem[] {
+  const filteredItems = items.filter(item => !idsToDelete.has(item.id));
+  return filteredItems.map(item => {
+    if (item.type === 'folder' && item.children) {
+      return {
+        ...item,
+        children: deleteItemsRecursive(item.children, idsToDelete),
+      };
+    }
+    return item;
+  });
+}
+
+export async function deleteSelectedItems(ids: string[]): Promise<void> {
+  const bookmarks = await readBookmarksFile();
+  const idsToDelete = new Set(ids);
+  const updatedBookmarks = deleteItemsRecursive(bookmarks, idsToDelete);
+  await writeBookmarksFile(updatedBookmarks);
+}
+
 export async function toggleFavoriteStatus(id: string): Promise<void> {
   const bookmarks = await readBookmarksFile();
   findAndMutate(bookmarks, (item) => item.id === id && item.type === 'bookmark', (items, index) => {

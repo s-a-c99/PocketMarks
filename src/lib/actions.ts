@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import { 
   saveItem, 
   deleteItem, 
+  deleteSelectedItems,
   overwriteBookmarks, 
   exportBookmarks, 
   exportSelectedBookmarks, 
@@ -67,6 +68,18 @@ export async function deleteItemAction(id: string): Promise<{ error?: string }> 
     return { error: message };
   }
 }
+
+export async function deleteSelectedItemsAction(ids: string[]): Promise<{ error?: string }> {
+    try {
+      await deleteSelectedItems(ids);
+      revalidatePath('/bookmarks');
+      return {};
+    } catch (e) {
+      console.error("Failed to delete selected items:", e);
+      const message = e instanceof Error ? e.message : "An unknown error occurred.";
+      return { error: message };
+    }
+  }
 
 type ImportPayload = {
     fileContent?: string;

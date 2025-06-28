@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown, Search, Star, Ban } from "lucide-react";
+import { Plus, FolderPlus, Link2Off, Loader2, ChevronDown, Search, Star, Ban, Trash2, ShieldX } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder, Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -21,6 +21,7 @@ import {
   exportSelectedBookmarksAction,
   checkDeadLinksAction,
   toggleFavoriteAction,
+  deleteSelectedItemsAction,
 } from "@/lib/actions";
 import {
   AlertDialog,
@@ -129,15 +130,15 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
   return searchRecursive(items);
 }
 
-const deleteRecursiveClient = (items: BookmarkItem[], idToDelete: string): BookmarkItem[] => {
+const deleteItemsRecursive = (items: BookmarkItem[], idsToDelete: Set<string>): BookmarkItem[] => {
     return items
-      .filter(item => item.id !== idToDelete)
-      .map(item => {
-        if (item.type === 'folder' && item.children) {
-          return { ...item, children: deleteRecursiveClient(item.children, idToDelete) };
-        }
-        return item;
-      });
+        .filter(item => !idsToDelete.has(item.id))
+        .map(item => {
+            if (item.type === 'folder' && item.children) {
+                return { ...item, children: deleteItemsRecursive(item.children, idsToDelete) };
+            }
+            return item;
+        });
 };
 
 
@@ -146,6 +147,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<BookmarkItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isConfirmingMultiDelete, setIsConfirmingMultiDelete] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -208,7 +210,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
     const originalItems = items;
     // Optimistic UI Update
-    setItems(currentItems => deleteRecursiveClient(currentItems, itemToDelete));
+    setItems(currentItems => deleteItemsRecursive(currentItems, new Set([itemToDelete!])));
     setItemToDelete(null);
 
     startTransition(() => {
@@ -227,6 +229,30 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       }).catch(() => {
         toast({ variant: "destructive", title: "Deletion Failed", description: "Could not connect to the server." });
         setItems(originalItems); // Revert on error
+      });
+    });
+  };
+
+  const handleConfirmMultiDelete = () => {
+    const idsToDelete = Array.from(selectedIds);
+    if (idsToDelete.length === 0) return;
+  
+    const originalItems = items;
+    setItems(currentItems => deleteItemsRecursive(currentItems, new Set(idsToDelete)));
+    setSelectedIds(new Set());
+    setIsConfirmingMultiDelete(false);
+  
+    startTransition(() => {
+      deleteSelectedItemsAction(idsToDelete).then(result => {
+        if (result?.error) {
+          toast({ variant: "destructive", title: "Deletion Failed", description: result.error });
+          setItems(originalItems); // Revert on failure
+        } else {
+          toast({ title: `${idsToDelete.length} items deleted`, description: "The selected items have been removed." });
+        }
+      }).catch(() => {
+        toast({ variant: "destructive", title: "Deletion Failed", description: "Could not connect to the server." });
+        setItems(originalItems); // Revert on failure
       });
     });
   };
@@ -458,6 +484,20 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         toggleFavoriteAction(id);
     });
   }
+
+  const handleSelectDeadLinks = () => {
+    const deadLinkIds = Object.entries(linkStatuses)
+      .filter(([, status]) => status !== 'ok')
+      .map(([id]) => id);
+    
+    if (deadLinkIds.length === 0) {
+      toast({ title: "No dead links to select", description: "All checked links appear to be working." });
+      return;
+    }
+
+    setSelectedIds(new Set(deadLinkIds));
+    toast({ title: `${deadLinkIds.length} dead link(s) selected`, description: "You can now delete them all at once." });
+  };
   
   return (
     <div className="w-full">
@@ -482,10 +522,16 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             </Button>
             
             {selectedIds.size > 0 && (
-              <Button variant="destructive" className="font-headline h-11" onClick={() => setSelectedIds(new Set())} disabled={isPending || isCheckingLinks}>
-                <Ban className="mr-2 h-4 w-4" />
-                Deselect ({selectedIds.size})
-              </Button>
+              <>
+                <Button variant="outline" className="font-headline h-11" onClick={() => setSelectedIds(new Set())} disabled={isPending || isCheckingLinks}>
+                  <Ban className="mr-2 h-4 w-4" />
+                  Clear Selection ({selectedIds.size})
+                </Button>
+                <Button variant="destructive" className="font-headline h-11" onClick={() => setIsConfirmingMultiDelete(true)} disabled={isPending || isCheckingLinks}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Selected
+                </Button>
+              </>
             )}
 
             <div className="relative flex-grow min-w-[200px] sm:min-w-0 sm:flex-1">
@@ -522,6 +568,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               <Button variant="outline" className="font-headline h-11" onClick={handleCheckLinks} disabled={isPending || isCheckingLinks}>
                   {isCheckingLinks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2Off className="mr-2 h-4 w-4" />}
                   Check for dead links
+              </Button>
+              <Button variant="outline" className="font-headline h-11" onClick={handleSelectDeadLinks} disabled={isCheckingLinks || Object.keys(linkStatuses).length === 0}>
+                  <ShieldX className="mr-2 h-4 w-4" /> Select Dead Links
               </Button>
               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".html" />
             </div>
@@ -573,7 +622,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         setIsOpen={setIsDialogOpen}
         onItemSaved={handleDialogSubmit}
         itemToEdit={itemToEdit}
-        onCheckForDuplicate={checkForDuplicate}
       />
       <DuplicateDialog
         isOpen={showDuplicateDialog}
@@ -608,6 +656,23 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isConfirmingMultiDelete} onOpenChange={setIsConfirmingMultiDelete}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Delete Selected Items?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the {selectedIds.size} selected items. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmMultiDelete} className="bg-destructive hover:bg-destructive/90">
                     Delete
                 </AlertDialogAction>
             </AlertDialogFooter>

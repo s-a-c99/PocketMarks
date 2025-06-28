@@ -69,18 +69,19 @@ This manual synchronization, via import/export of a standard HTML file, is **the
 
 ### Step 1: Consolidating Your Bookmarks into PocketMarks
 
-To start, you'll want to import all your existing bookmarks from your main browser. The process is very similar across all major browsers like Chrome, Firefox, Edge, and Safari.
+To start, you'll want to import all your existing bookmarks from your main browser. Here’s how to do it from Firefox, but the process is very similar for Chrome, Edge, and others.
 
-#### Exporting from Your Browser
-1.  Open your browser's **Bookmark Manager**. This is often found in the main menu under "Bookmarks," or by pressing `Ctrl+Shift+O` (or `Cmd+Shift+O` on Mac).
-2.  In the manager window, look for an **"Export"** or **"Import and Backup"** option, usually under a menu or settings icon (often represented by three dots or a gear).
-3.  Choose to **"Export Bookmarks to HTML..."**.
-4.  Save the `bookmarks.html` file to a convenient location, like your Desktop.
+#### Exporting from Firefox
+1.  Open Firefox.
+2.  Click the menu button (☰) in the top-right corner and select **Bookmarks**, then click **Manage Bookmarks** at the bottom. You can also press `Ctrl+Shift+O` (or `Cmd+Shift+O` on Mac).
+3.  In the Library window that opens, click on **Import and Backup**.
+4.  Select **Export Bookmarks to HTML...**.
+5.  Choose a location to save the `bookmarks.html` file (e.g., your Desktop) and click **Save**.
 
 #### Importing into PocketMarks
 1.  In PocketMarks, click the **Import / Export** button.
 2.  Select **Merge from file...**.
-3.  Choose the `bookmarks.html` file you just saved.
+3.  Choose the `bookmarks.html` file you just saved from Firefox.
 4.  PocketMarks will show you a comparison of new bookmarks to be added. Confirm the import.
 5.  Repeat this process for any other browsers you use to consolidate everything in one place.
 
@@ -90,7 +91,7 @@ Once PocketMarks is your central, organized hub, you can sync this clean collect
 
 1.  **Export from PocketMarks**: Use the **Export** function to download a single, up-to-date HTML file containing all your links.
 2.  **Transfer the File**: Move this HTML file to your other device. You can use a USB stick, send it to yourself via a private email, or any method you trust.
-3.  **Import into Your Browser**:
+3.  **Import into Your Browser (e.g., Opera, Chrome)**:
     -   Open the browser on the new device.
     -   Go to the Bookmark Manager (usually `Ctrl+Shift+O` or by finding it in the menu).
     -   For a perfect sync, it's best to first **delete all existing bookmarks** from the browser.
@@ -98,6 +99,8 @@ Once PocketMarks is your central, organized hub, you can sync this clean collect
 
 The browser will **automatically** read the file and recreate the exact structure of folders and links from your PocketMarks collection. You do not need to add them one by one. This ensures every browser is a perfect mirror of your curated hub.
 
+#### Pro Tip: Reordering Bookmarks
+For extensive reordering of many bookmarks and folders, your browser's built-in bookmark manager is often the fastest tool, as it usually supports drag-and-drop. Once you're happy with the new structure, export the HTML file from your browser and use the **"Replace from file..."** option in PocketMarks to instantly update your central hub.
 
 ## Password Recovery
 
