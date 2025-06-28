@@ -33,13 +33,9 @@ The core principle of PocketMarks is **total user control**. There are no cloud 
 
 ---
 
-## Getting Started: Choose Your Path
+## Getting Started
 
-You have two main ways to use PocketMarks, depending on your needs.
-
-### Path A: Local-First (For Maximum Privacy on a Single Computer)
-
-This is the recommended path for users who want to run PocketMarks exclusively on their own computer for maximum privacy and simplicity. Your data will never leave your machine.
+PocketMarks is designed to run locally on your computer, ensuring maximum privacy and simplicity. Your data will never leave your machine.
 
 1.  **Download the Code:** Download the project files from this GitHub repository as a ZIP file.
 2.  **Install Dependencies:** Open a terminal in the project's root directory and run:
@@ -59,39 +55,29 @@ This is the recommended path for users who want to run PocketMarks exclusively o
 5.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
     **Tip:** Bookmark this address in your browser for easy access!
 
-### Path B: Deploy to the Cloud (For Access From Any Device)
-
-This path is for users who want to access their bookmarks from multiple devices (like a laptop, phone, and tablet). By deploying the app to a free cloud service like Vercel, you get your own private, password-protected version of PocketMarks accessible from anywhere via a personal URL.
-
-**Your data remains private.** You are not sharing it with anyone; you are simply creating your own personal instance of the application on the internet.
-
-1.  **Click the Deploy Button:**
-    [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-username%2Fyour-repo-name&env=POCKETMARKS_USERNAME,POCKETMARKS_PASSWORD&envDescription=Enter%20your%20desired%20username%20and%20password%20for%20your%20private%20PocketMarks%20instance.&project-name=my-pocketmarks&repository-name=my-pocketmarks)
-
-2.  **Register/Login to Vercel:** Vercel will ask you to log in. The easiest way is to use your GitHub account. This is necessary for Vercel to create a private copy of the PocketMarks code just for you.
-
-3.  **Set Your Credentials:** Vercel will then ask you to enter your desired `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`. These will be the credentials you use to log into your PocketMarks app.
-
-4.  **Deploy:** Click "Deploy" and wait a few moments. Vercel will build your app and provide you with your personal URL (e.g., `https://my-pocketmarks.vercel.app`).
-
-5.  **Login:** Visit your new URL and log in with the credentials you set in the previous step.
-
 ## How to Sync Bookmarks Across Devices
 
-The core philosophy of PocketMarks is **total user control**. This means that if you run separate instances of the app on different machines (e.g., one on a laptop and one on a desktop), you synchronize them manually. This is the essence of true self-hosting and gives you unparalleled privacy.
+The core philosophy of PocketMarks is **total user control**. This means you synchronize bookmarks between your devices (e.g., a laptop and a desktop) manually. This is the essence of true self-hosting, giving you unparalleled privacy and control. The order of bookmarks will be preserved.
 
-Here’s how you do it:
-1.  **Install PocketMarks:** Follow the "Getting Started" guide to install a separate copy of PocketMarks on each device you want to use.
-2.  **Export from Your Main Device:** On the device that has the most up-to-date bookmarks, use the **Export** function to download a single HTML file containing all your links. The order of the bookmarks will be preserved.
-3.  **Transfer the File:** Move this HTML file to your other device. You can use a USB stick, send it to yourself via a private email, or any method you trust.
-4.  **Import on the Second Device:** On the second device, open PocketMarks and use the **Import** function. It's best to use the **"Replace from file..."** option to ensure the bookmarks are perfectly identical to your main device.
+Here’s the recommended workflow to use PocketMarks as your central hub:
+
+### Step 1: Export from PocketMarks
+On your main device where PocketMarks is running, use the **Export** function to download a single, up-to-date HTML file containing all your links.
+
+### Step 2: Transfer the File
+Move this HTML file to your other device. You can use a USB stick, send it to yourself via a private email, or any method you trust.
+
+### Step 3: Import into Your Browser
+1. Open the browser on the second device.
+2. Go to the Bookmark Manager (usually `Ctrl+Shift+O` or `Cmd+Shift+O`).
+3. For a clean sync, it's best to first **delete all existing bookmarks** from the browser.
+4. Use the browser's **Import** function and select the HTML file you transferred.
+
+The browser will **automatically** read the file and add all your bookmarks and folders, recreating the exact structure you had in PocketMarks. You do not need to add them one by one. This ensures your browser is a perfect mirror of your curated collection.
 
 ## Password Recovery
 
-Since this is a self-hosted application, there is no traditional "forgot password" feature. You are in full control.
-
-*   **If you are running it locally:** Simply open the `.env.local` file on your computer to see the password you set.
-*   **If you deployed it to Vercel:** Log into your Vercel account, go to your PocketMarks project settings, and look for the "Environment Variables" section. Your password will be stored there.
+Since this is a self-hosted application, there is no traditional "forgot password" feature. You are in full control. Simply open the `.env.local` file on your computer to see the password you set.
 
 ## Support the Project
 
