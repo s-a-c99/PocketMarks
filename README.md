@@ -17,9 +17,8 @@ The core principle of PocketMarks is **total user control**. There are no cloud 
   - Import bookmarks from standard HTML files exported by any browser.
   - Choose to **merge** new links with your existing collection or replace it entirely.
   - A comparison view shows you exactly which new bookmarks will be added during a merge.
-  - Export all or just a selection of your bookmarks back to a standard HTML file, perfect for backups, sharing, or providing curated context files for AI projects.
+  - Export all or just a selection of your bookmarks back to a standard HTML file. This is perfect for backups, sharing, or providing curated context files for AI projects.
 - **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists in your collection and asks for confirmation.
-- **Privacy First:** No external tracking or AI API calls. All your data stays within the application.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
 
 ## Getting Started
@@ -68,19 +67,19 @@ This manual synchronization, via import/export of a standard HTML file, is **the
 
 ### Step 1: Consolidating Your Bookmarks into PocketMarks
 
-To start, you'll want to import all your existing bookmarks from your main browser. Here’s how to do it from Firefox, but the process is very similar for Chrome, Edge, and others.
+To start, you'll want to import all your existing bookmarks from your main browser. The process is very similar for Chrome, Firefox, Edge, and others.
 
-#### Exporting from Firefox
-1.  Open Firefox.
-2.  Click the menu button (☰) in the top-right corner and select **Bookmarks**, then click **Manage Bookmarks** at the bottom. You can also press `Ctrl+Shift+O` (or `Cmd+Shift+O` on Mac).
-3.  In the Library window that opens, click on **Import and Backup**.
+#### Exporting from Your Browser
+1.  Open your browser.
+2.  Find the Bookmark Manager. This is often found in the main menu (usually an icon with three dots or lines in the top-right corner) under "Bookmarks". You can also try the keyboard shortcut `Ctrl+Shift+O` (or `Cmd+Shift+O` on Mac).
+3.  In the Bookmark Manager, look for an "Export" or "Import and Backup" option.
 4.  Select **Export Bookmarks to HTML...**.
 5.  Choose a location to save the `bookmarks.html` file (e.g., your Desktop) and click **Save**.
 
 #### Importing into PocketMarks
 1.  In PocketMarks, click the **Import / Export** button.
 2.  Select **Merge from file...**.
-3.  Choose the `bookmarks.html` file you just saved from Firefox.
+3.  Choose the `bookmarks.html` file you just saved.
 4.  PocketMarks will show you a comparison of new bookmarks to be added. Confirm the import.
 5.  Repeat this process for any other browsers you use to consolidate everything in one place.
 
@@ -90,14 +89,16 @@ Once PocketMarks is your central, organized hub, you can sync this clean collect
 
 1.  **Export from PocketMarks**: Use the **Export** function to download a single, up-to-date HTML file containing all your links.
 2.  **Transfer the File**: Move this HTML file to your other device. You can use a USB stick, send it to yourself via a private email, or any method you trust.
-3.  **Import into Your Browser (e.g., Opera, Chrome)**:
+3.  **Import into Your Browser**:
     -   Open the browser on the new device.
-    -   Go to the Bookmark Manager (usually `Ctrl+Shift+O` or by finding it in the menu).
+    -   Go to the Bookmark Manager.
     -   For a perfect sync, it's best to first **delete all existing bookmarks** from the browser.
     -   Find the **Import** function and select the HTML file you transferred from PocketMarks.
 
 The browser will **automatically** read the file and recreate the exact structure of folders and links from your PocketMarks collection. You do not need to add them one by one. This ensures every browser is a perfect mirror of your curated hub.
 
+### Pro Tip: Reordering Bookmarks
+If you need to do a major reorganization of your bookmarks (moving many items between folders), the fastest way is to do it directly in your main browser's bookmark manager, which is optimized for that task. Once you're done, simply use the "Replace from file..." option in PocketMarks to update your central hub with the new, clean structure.
 
 ## Password Recovery
 

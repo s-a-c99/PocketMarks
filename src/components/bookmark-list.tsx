@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2 } from "lucide-react";
+import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2, Import, Export } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder, Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -80,7 +80,7 @@ function sortItems(items: BookmarkItem[], sortBy: string): BookmarkItem[] {
 
     switch (sortBy) {
       case 'date-desc':
-        return new Date(b.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       case 'date-asc':
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       case 'alpha-asc':
@@ -202,7 +202,6 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     if (!itemToDelete) return;
 
     const originalItems = items;
-    // Optimistic UI Update
     setItems(currentItems => deleteItemsRecursive(currentItems, new Set([itemToDelete!])));
     setItemToDelete(null);
 
@@ -500,14 +499,22 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => handleImportClick('merge')}>
+                    <Import className="mr-2 h-4 w-4" />
                     Merge from file...
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleImportClick('replace')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    <Import className="mr-2 h-4 w-4" />
                     Replace from file...
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleExport} disabled={isPending}>Export all...</DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportSelected} disabled={isPending || selectedIds.size === 0}>Export selected...</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExport} disabled={isPending}>
+                    <Export className="mr-2 h-4 w-4" />
+                    Export all...
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportSelected} disabled={isPending || selectedIds.size === 0}>
+                    <Export className="mr-2 h-4 w-4" />
+                    Export selected...
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
