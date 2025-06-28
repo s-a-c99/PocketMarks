@@ -57,23 +57,41 @@ PocketMarks is designed to run locally on your computer, ensuring maximum privac
 
 ## How to Sync Bookmarks Across Devices
 
-The core philosophy of PocketMarks is **total user control**. This means you synchronize bookmarks between your devices (e.g., a laptop and a desktop) manually. This is the essence of true self-hosting, giving you unparalleled privacy and control. The order of bookmarks will be preserved.
+The core philosophy of PocketMarks is **total user control**. It is designed to be the single source of truth for all your bookmarks. You consolidate your links from various browsers here, clean them up, and then distribute a pristine, organized collection back to your devices.
 
-Here’s the recommended workflow to use PocketMarks as your central hub:
+This manual synchronization, via import/export of a standard HTML file, is **the essence of true self-hosting**. It gives you unparalleled privacy and control, ensuring no data is ever sent to a third-party server without your explicit action. The order of bookmarks will be preserved.
 
-### Step 1: Export from PocketMarks
-On your main device where PocketMarks is running, use the **Export** function to download a single, up-to-date HTML file containing all your links.
+### Step 1: Consolidating Your Bookmarks into PocketMarks
 
-### Step 2: Transfer the File
-Move this HTML file to your other device. You can use a USB stick, send it to yourself via a private email, or any method you trust.
+To start, you'll want to import all your existing bookmarks from your main browser. Here’s how to do it from Firefox, but the process is very similar for Chrome, Edge, and others.
 
-### Step 3: Import into Your Browser
-1. Open the browser on the second device.
-2. Go to the Bookmark Manager (usually `Ctrl+Shift+O` or `Cmd+Shift+O`).
-3. For a clean sync, it's best to first **delete all existing bookmarks** from the browser.
-4. Use the browser's **Import** function and select the HTML file you transferred.
+#### Exporting from Firefox
+1.  Open Firefox.
+2.  Click the menu button (☰) in the top-right corner and select **Bookmarks**, then click **Manage Bookmarks** at the bottom. You can also press `Ctrl+Shift+O` (or `Cmd+Shift+O` on Mac).
+3.  In the Library window that opens, click on **Import and Backup**.
+4.  Select **Export Bookmarks to HTML...**.
+5.  Choose a location to save the `bookmarks.html` file (e.g., your Desktop) and click **Save**.
 
-The browser will **automatically** read the file and add all your bookmarks and folders, recreating the exact structure you had in PocketMarks. You do not need to add them one by one. This ensures your browser is a perfect mirror of your curated collection.
+#### Importing into PocketMarks
+1.  In PocketMarks, click the **Import / Export** button.
+2.  Select **Merge from file...**.
+3.  Choose the `bookmarks.html` file you just saved from Firefox.
+4.  PocketMarks will show you a comparison of new bookmarks to be added. Confirm the import.
+5.  Repeat this process for any other browsers you use to consolidate everything in one place.
+
+### Step 2: Syncing Your Curated Collection to Other Devices
+
+Once PocketMarks is your central, organized hub, you can sync this clean collection to all your other browsers and devices.
+
+1.  **Export from PocketMarks**: Use the **Export** function to download a single, up-to-date HTML file containing all your links.
+2.  **Transfer the File**: Move this HTML file to your other device. You can use a USB stick, send it to yourself via a private email, or any method you trust.
+3.  **Import into Your Browser (e.g., Opera, Chrome)**:
+    -   Open the browser on the new device.
+    -   Go to the Bookmark Manager (usually `Ctrl+Shift+O` or by finding it in the menu).
+    -   For a perfect sync, it's best to first **delete all existing bookmarks** from the browser.
+    -   Find the **Import** function and select the HTML file you transferred from PocketMarks.
+
+The browser will **automatically** read the file and recreate the exact structure of folders and links from your PocketMarks collection. You do not need to add them one by one. This ensures every browser is a perfect mirror of your curated hub.
 
 ## Password Recovery
 
