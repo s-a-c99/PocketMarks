@@ -1,8 +1,7 @@
 # **App Name**: PocketMarks
 
 ## Core Features:
-
-    - Secure Access: Secure, password-protected access to personal bookmarks.
+- Secure Access: Secure, password-protected access to personal bookmarks.
     - Flexible Hosting: Multiple usage paths:
         -- Local-First: Run on a local machine for maximum privacy.
         -- Cloud-Hosted: Deploy a private instance to Vercel for cross-device access.
