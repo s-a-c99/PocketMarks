@@ -85,7 +85,7 @@ To enable this feature:
      ```
    - **For Vercel Deployments (Option 2):** In your Vercel project dashboard, go to "Settings" -> "Environment Variables". Add a new variable named `GOOGLE_API_KEY` and paste your key as the value.
 
-**Important Notes:** This feature is free within Gemini API's free tier limits. By using it, you agree to Google's terms, which allow data usage to improve their AI models. Exceeding free tier limits may require a paid tier with costs based on token usage. This is an optional step that enhances functionality but involves sending bookmark titles and URLs to an external service.
+**Important Notes:** This feature is free within **Gemini API's free tier limits**. By using it, you agree to Google's terms, which allow data usage to improve their AI models. Exceeding free tier limits may require a paid tier with costs based on token usage. This is an optional step that enhances functionality but involves sending bookmark titles and URLs to an external service.
 
 ---
 
