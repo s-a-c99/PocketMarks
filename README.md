@@ -82,6 +82,18 @@ To enable smart features like automatic tag suggestions, you need to provide the
 
 ---
 
+## AI-Powered Tag Reordering with Gemini API
+
+PocketMarks supports an optional feature that uses the Google Gemini API to automatically suggest an optimal order for your bookmark tags, making your bookmark management more efficient and intuitive. To enable it:
+
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey) to generate your free Gemini API key.
+2. For local use, add `GOOGLE_API_KEY=YOUR_API_KEY` to your `.env.local` file.
+3. For Vercel deployment, add `GOOGLE_API_KEY` in your project settings under 'Environment Variables'.
+
+**Important Notes:** This feature is free within Gemini API's free tier limits (100 requests per day for Gemini 2.5 Pro). By using it, you agree to Google's terms, which allow data usage to improve their AI models. Exceeding free tier limits may require a paid tier with costs based on token usage.
+
+---
+
 ## How to Sync Bookmarks Across Devices
 
 The core philosophy of PocketMarks is **total user control**. It is designed to be the single source of truth for all your bookmarks. You consolidate your links from various browsers here, clean them up, and then distribute a pristine, organized collection back to your devices.
