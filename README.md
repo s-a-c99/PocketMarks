@@ -71,12 +71,11 @@ This option is for users who want to access their bookmarks from multiple device
 
 ### Optional: Enable AI Features
 
-PocketMarks supports optional AI-powered features that use the Google Gemini API to enhance your bookmark management experience:
+PocketMarks supports an optional AI-powered feature that uses the Google Gemini API to enhance your bookmark management experience:
 
-- **Automatic Tag Suggestions:** Get intelligent tag recommendations for your bookmarks
-- **AI-Powered Tag Reordering:** Automatically suggest an optimal order for your bookmark tags, making your bookmark management more efficient and intuitive
+- **Automatic Tag Suggestions:** Get intelligent tag recommendations for your bookmarks based on their titles and URLs
 
-To enable these features:
+To enable this feature:
 
 1. **Get a Google AI API Key:** Visit [Google AI Studio](https://aistudio.google.com/app/apikey) to generate your free API key.
 2. **Add the Key to Your Environment:**
@@ -86,7 +85,7 @@ To enable these features:
      ```
    - **For Vercel Deployments (Option 2):** In your Vercel project dashboard, go to "Settings" -> "Environment Variables". Add a new variable named `GOOGLE_API_KEY` and paste your key as the value.
 
-**Important Notes:** These features are free within Gemini API's free tier limits (100 requests per day for Gemini 2.5 Pro). By using them, you agree to Google's terms, which allow data usage to improve their AI models. Exceeding free tier limits may require a paid tier with costs based on token usage. This is an optional step that enhances functionality but involves sending bookmark titles and URLs to an external service.
+**Important Notes:** This feature is free within Gemini API's free tier limits. By using it, you agree to Google's terms, which allow data usage to improve their AI models. Exceeding free tier limits may require a paid tier with costs based on token usage. This is an optional step that enhances functionality but involves sending bookmark titles and URLs to an external service.
 
 ---
 
