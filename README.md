@@ -25,6 +25,31 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
 - **(Optional) AI-Powered Tag Suggestions:** By providing your own Google AI API key, you can enable an agent to automatically suggest relevant tags for your bookmarks, making organization even faster.
 
+## Screenshots
+
+### Login Interface
+<img src="public/screenshots/login-interface.png" alt="PocketMarks Login Interface" width="800" />
+
+*Clean and secure login interface with username/password authentication*
+
+### Main Dashboard - Light & Dark Mode
+<img src="public/screenshots/main-dashboard-light.png" alt="PocketMarks Main Dashboard - Light Mode" width="800" />
+
+*Main dashboard in light mode showing bookmark organization with folders*
+
+<img src="public/screenshots/main-dashboard-dark.png" alt="PocketMarks Main Dashboard - Dark Mode" width="800" />
+
+*Main dashboard in dark mode demonstrating the responsive UI*
+
+### Analytics Dashboard - Light & Dark Mode
+<img src="public/screenshots/analytics-dashboard-light.png" alt="PocketMarks Analytics Dashboard - Light Mode" width="800" />
+
+*Analytics dashboard in light mode showing bookmark statistics and insights*
+
+<img src="public/screenshots/analytics-dashboard-dark.png" alt="PocketMarks Analytics Dashboard - Dark Mode" width="800" />
+
+*Analytics dashboard in dark mode with visual charts and domain distribution*
+
 ## Getting Started
 
 ---
