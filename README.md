@@ -28,7 +28,7 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 ## Screenshots
 
 ### Login Interface
-<img src="public/screenshots/login-interface.png" alt="PocketMarks Login Interface" width="200" />
+<img src="public/screenshots/login-interface.png" alt="PocketMarks Login Interface" width="300" />
 
 *Clean and secure login interface with username/password authentication*
 
@@ -42,11 +42,11 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 *Main dashboard in dark mode demonstrating the responsive UI*
 
 ### Analytics Dashboard - Light & Dark Mode
-<img src="public/screenshots/analytics-dashboard-light.png" alt="PocketMarks Analytics Dashboard - Light Mode" width="3200" />
+<img src="public/screenshots/analytics-dashboard-light.png" alt="PocketMarks Analytics Dashboard - Light Mode" width="2400" />
 
 *Analytics dashboard in light mode showing bookmark statistics and insights*
 
-<img src="public/screenshots/analytics-dashboard-dark.png" alt="PocketMarks Analytics Dashboard - Dark Mode" width="3200" />
+<img src="public/screenshots/analytics-dashboard-dark.png" alt="PocketMarks Analytics Dashboard - Dark Mode" width="2400" />
 
 *Analytics dashboard in dark mode with visual charts and domain distribution*
 
