@@ -28,7 +28,7 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 ## Screenshots
 
 ### Login Interface
-<img src="public/screenshots/login-interface.png" alt="PocketMarks Login Interface" width="400" />
+<img src="public/screenshots/login-interface.png" alt="PocketMarks Login Interface" width="200" />
 
 *Clean and secure login interface with username/password authentication*
 
@@ -37,7 +37,7 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 
 *Main dashboard in light mode showing bookmark organization with folders*
 
-<img src="public/screenshots/main-dashboard-dark.png" alt="PocketMarks Main Dashboard - Dark Mode" width="1600" />
+<img src="public/screenshots/main-dashboard-dark.png" alt="PocketMarks Main Dashboard - Dark Mode" width="3200" />
 
 *Main dashboard in dark mode demonstrating the responsive UI*
 
