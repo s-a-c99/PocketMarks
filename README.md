@@ -28,7 +28,7 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 ## Screenshots
 
 ### Login Interface
-<img src="public/screenshots/login-interface.png" alt="PocketMarks Login Interface" width="800" />
+<img src="public/screenshots/login-interface.png" alt="PocketMarks Login Interface" width="400" />
 
 *Clean and secure login interface with username/password authentication*
 
