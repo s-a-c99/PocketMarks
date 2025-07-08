@@ -213,6 +213,7 @@ This option is for users who want to access their bookmarks from multiple device
 3.  Vercel will then ask you to configure the project. You must enter a `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`. These are the credentials you will use to log into **your** PocketMarks app.  
 4.  Click **"Deploy"**. Vercel will build and deploy the application, giving you a unique URL (e.g., `my-pocketmarks-hub.vercel.app`).    
 5.  Navigate to that URL to access your private, online version of PocketMarks.    
+
 <img src="public/screenshots/Vercel-dashboard.png" alt="PocketMarks on Vercel dashboard" width="300" />  
 
 ---
