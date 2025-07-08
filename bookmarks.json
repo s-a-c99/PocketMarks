@@ -1,17 +1,71 @@
 [
   {
-    "id": "69a7a98c-bb87-4261-9495-28522d8da572",
+    "id": "example-folder-1",
     "type": "folder",
-    "title": "Trash",
+    "title": "Development",
     "children": [
       {
-        "id": "4ed0aa8f-7766-4628-8d22-ce6712d46bbc",
+        "id": "example-bookmark-1",
         "type": "bookmark",
-        "title": "Amazon Prime",
-        "url": "https://www.amazon.fr/",
-        "createdAt": "2025-06-26T09:26:05.000Z"
+        "title": "Example Documentation Site",
+        "url": "https://example-docs.com",
+        "tags": ["documentation", "reference"],
+        "favorite": true,
+        "createdAt": "2025-01-01T10:00:00.000Z"
       },
+      {
+        "id": "example-bookmark-2",
+        "type": "bookmark",
+        "title": "Sample Tutorial Platform",
+        "url": "https://example-tutorials.com",
+        "tags": ["learning", "tutorials"],
+        "favorite": false,
+        "createdAt": "2025-01-02T14:30:00.000Z"
+      }
     ],
-    "createdAt": "2025-05-17T21:53:25.000Z"
+    "createdAt": "2025-01-01T09:00:00.000Z"
   },
-]  
+  {
+    "id": "example-folder-2",
+    "type": "folder",
+    "title": "News & Media",
+    "children": [
+      {
+        "id": "example-bookmark-3",
+        "type": "bookmark",
+        "title": "Example News Portal",
+        "url": "https://example-news.com",
+        "tags": ["news", "current-events"],
+        "favorite": false,
+        "createdAt": "2025-01-03T08:15:00.000Z"
+      },
+      {
+        "id": "example-subfolder-1",
+        "type": "folder",
+        "title": "Technology News",
+        "children": [
+          {
+            "id": "example-bookmark-4",
+            "type": "bookmark",
+            "title": "Sample Tech Blog",
+            "url": "https://example-tech-blog.com",
+            "tags": ["technology", "blog"],
+            "favorite": true,
+            "createdAt": "2025-01-04T16:45:00.000Z"
+          }
+        ],
+        "createdAt": "2025-01-03T08:20:00.000Z"
+      }
+    ],
+    "createdAt": "2025-01-03T08:00:00.000Z"
+  },
+  {
+    "id": "example-bookmark-5",
+    "type": "bookmark",
+    "title": "Example Search Engine",
+    "url": "https://example-search.com",
+    "tags": ["search", "tools"],
+    "favorite": false,
+    "createdAt": "2025-01-05T12:00:00.000Z"
+  }
+]
