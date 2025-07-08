@@ -66,33 +66,104 @@ This is the recommended path for most users. Your data will never leave your com
     ```bash
     npm audit fix
     ```
-3.  **Set Up Credentials:** Create a new file named `.env.local` in the root of the project. This file will hold your private username and password. Add the following lines, replacing the example values:
-    ```
-    POCKETMARKS_USERNAME=write_your_name_here
-    POCKETMARKS_PASSWORD=write_your_password_here
-    ```
-    
-    **Quick Terminal Commands:**
-    
-    **Terminal (macOS/Linux):**
+3.  **Set Up Credentials:** Create a `.env.local` file in the project root directory to store your login credentials securely.
+
+    **IMPORTANT:** The file must be named exactly `.env.local` (with the dot at the beginning) and placed in the root directory alongside `package.json`.
+
+    ### Method 1: Terminal Commands (Recommended)
+
+    **macOS/Linux Terminal:**
     ```bash
-    echo "POCKETMARKS_USERNAME=your_username" > .env.local && echo "POCKETMARKS_PASSWORD=your_password" >> .env.local
+    echo "POCKETMARKS_USERNAME=your_username" > .env.local
+    echo "POCKETMARKS_PASSWORD=your_password" >> .env.local
     ```
-    
+
     **Windows Command Prompt:**
     ```cmd
-    echo POCKETMARKS_USERNAME=your_username > .env.local && echo POCKETMARKS_PASSWORD=your_password >> .env.local
+    echo POCKETMARKS_USERNAME=your_username > .env.local
+    echo POCKETMARKS_PASSWORD=your_password >> .env.local
     ```
-    
-    **Tip:** If you have cursor movement issues in the terminal, write the command in a text editor first, modify it with your credentials, then copy and paste it into the terminal.
-    
-    This file is included in `.gitignore` and will not be committed to your repository.
+
+    **Windows PowerShell:**
+    ```powershell
+    echo "POCKETMARKS_USERNAME=your_username" | Out-File -FilePath .env.local -Encoding utf8
+    echo "POCKETMARKS_PASSWORD=your_password" | Out-File -FilePath .env.local -Append -Encoding utf8
+    ```
+
+    ### Method 2: Manual Creation
+
+    1. Open your text editor (Notepad, VS Code, TextEdit, etc.)
+    2. Create a new file with this exact content:
+       ```
+       POCKETMARKS_USERNAME=your_username
+       POCKETMARKS_PASSWORD=your_password
+       ```
+    3. **Save as `.env.local`** in the project root directory
+    4. **Make sure there's no extra `.txt` extension**
+
+    ### Verify File Creation
+
+    Check that the file was created correctly:
+
+    **macOS/Linux:**
+    ```bash
+    ls -la .env.local
+    cat .env.local
+    ```
+
+    **Windows:**
+    ```cmd
+    dir .env.local
+    type .env.local
+    ```
+
+    ### Example File Structure
+    ```
+    PocketMarks/
+    ├── .env.local          ← Your credentials file (NEW)
+    ├── package.json
+    ├── README.md
+    └── src/
+    ```
+
+    **Security Note:** This file is included in `.gitignore` and will not be committed to your repository.
 4.  **Run the App:**
     ```bash
     npm run dev
     ```
+    
+    **IMPORTANT:** If you created the `.env.local` file after starting the server, you need to restart it:
+    - Press `Ctrl+C` to stop the server
+    - Run `npm run dev` again
+    
+    The server will show:
+    ```
+    ✓ Ready in [time]ms
+    - Local: http://localhost:9002
+    - Environments: .env.local
+    ```
+
 5.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
     **Tip:** Bookmark this address in your browser for easy access!
+
+### Troubleshooting Login Issues
+
+**Problem: "Invalid username or password" error**
+- ✅ Check that `.env.local` exists in the project root
+- ✅ Verify file content with `cat .env.local` (macOS/Linux) or `type .env.local` (Windows)
+- ✅ Restart the development server (`Ctrl+C` then `npm run dev`)
+- ✅ Ensure no extra spaces around the `=` sign
+- ✅ Use the exact username/password from your `.env.local` file
+
+**Problem: "File not found" when creating .env.local**
+- ✅ Make sure you're in the project root directory (where `package.json` is located)
+- ✅ Use `pwd` (macOS/Linux) or `cd` (Windows) to check your current directory
+- ✅ The file name must start with a dot: `.env.local` (not `env.local`)
+
+**Problem: Login page won't load**
+- ✅ Check that the server is running: look for "Ready in" message
+- ✅ Verify the URL is exactly `http://localhost:9002`
+- ✅ Check if another process is using port 9002
 
 ---
 
