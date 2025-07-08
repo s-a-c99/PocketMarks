@@ -179,7 +179,6 @@ If you find this project useful, please consider supporting its development. Tha
 
 - [Donate via PayPal](https://paypal.me/99sac?country.x=FR&locale.x=fr_FR)
 - [Sponsor on GitHub](https://github.com/sponsors/s-a-c99)
-- [Support on Patreon](https://patreon.com/YOUR_USERNAME)
 
 ## Contributing
 
