@@ -62,6 +62,10 @@ This is the recommended path for most users. Your data will never leave your com
     ```bash
     npm install
     ```
+    If you see security warnings, quickly resolve them with:
+    ```bash
+    npm audit fix
+    ```
 3.  **Set Up Credentials:** Create a new file named `.env.local` in the root of the project. This file will hold your private username and password. Add the following lines, replacing the example values:
     ```
     POCKETMARKS_USERNAME=write_your_name_here
