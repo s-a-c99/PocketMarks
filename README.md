@@ -76,15 +76,15 @@ This is the recommended path for most users. Your data will never leave your com
     
     **Terminal (macOS/Linux):**
     ```bash
-    echo "POCKETMARKS_USERNAME=tuo_username" > .env.local
-    echo "POCKETMARKS_PASSWORD=tua_password" >> .env.local
+    echo "POCKETMARKS_USERNAME=your_username" > .env.local && echo "POCKETMARKS_PASSWORD=your_password" >> .env.local
     ```
     
     **Windows Command Prompt:**
     ```cmd
-    echo POCKETMARKS_USERNAME=tuo_username > .env.local
-    echo POCKETMARKS_PASSWORD=tua_password >> .env.local
+    echo POCKETMARKS_USERNAME=your_username > .env.local && echo POCKETMARKS_PASSWORD=your_password >> .env.local
     ```
+    
+    **Tip:** If you have cursor movement issues in the terminal, write the command in a text editor first, modify it with your credentials, then copy and paste it into the terminal.
     
     This file is included in `.gitignore` and will not be committed to your repository.
 4.  **Run the App:**
