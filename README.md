@@ -67,6 +67,21 @@ This is the recommended path for most users. Your data will never leave your com
     POCKETMARKS_USERNAME=write_your_name_here
     POCKETMARKS_PASSWORD=write_your_password_here
     ```
+    
+    **Quick Terminal Commands:**
+    
+    **Terminal (macOS/Linux):**
+    ```bash
+    echo "POCKETMARKS_USERNAME=tuo_username" > .env.local
+    echo "POCKETMARKS_PASSWORD=tua_password" >> .env.local
+    ```
+    
+    **Windows Command Prompt:**
+    ```cmd
+    echo POCKETMARKS_USERNAME=tuo_username > .env.local
+    echo POCKETMARKS_PASSWORD=tua_password >> .env.local
+    ```
+    
     This file is included in `.gitignore` and will not be committed to your repository.
 4.  **Run the App:**
     ```bash
