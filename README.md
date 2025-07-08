@@ -117,14 +117,43 @@ This is the recommended path for most users. Your data will never leave your com
     type .env.local
     ```
 
-    ### Example File Structure
+    ### Actual Project Structure
     ```
     PocketMarks/
-    ├── .env.local          ← Your credentials file (NEW)
+    ├── .env.local          ← Your credentials file (HIDDEN - starts with dot)
+    ├── .gitignore          ← Hidden file
+    ├── apphosting.yaml
+    ├── backups/
+    ├── bookmarks.json
+    ├── components.json
+    ├── CONTRIBUTING.md
+    ├── docs/
+    ├── LICENSE
+    ├── next.config.ts
     ├── package.json
+    ├── public/
     ├── README.md
-    └── src/
+    ├── src/
+    └── tailwind.config.ts
     ```
+
+    **IMPORTANT:** `.env.local` is a **hidden file** (starts with a dot). You won't see it in normal file explorers unless you enable "Show hidden files". This is normal and expected!
+
+    ### How to View Hidden Files (Optional)
+
+    **macOS Finder:**
+    - Press `Cmd + Shift + .` (dot) to toggle hidden files visibility
+
+    **Windows File Explorer:**
+    - Go to View tab → Check "Hidden items"
+    - Or press `Alt` → View → Options → View tab → "Show hidden files"
+
+    **Linux File Manager:**
+    - Press `Ctrl + H` to toggle hidden files
+    - Or View → Show Hidden Files
+
+    **VS Code / Text Editors:**
+    - Hidden files are usually visible by default in most code editors
 
     **Security Note:** This file is included in `.gitignore` and will not be committed to your repository.
 4.  **Run the App:**
@@ -159,6 +188,8 @@ This is the recommended path for most users. Your data will never leave your com
 - ✅ Make sure you're in the project root directory (where `package.json` is located)
 - ✅ Use `pwd` (macOS/Linux) or `cd` (Windows) to check your current directory
 - ✅ The file name must start with a dot: `.env.local` (not `env.local`)
+- ✅ Remember: `.env.local` is a hidden file - you won't see it in file explorer unless you enable "Show hidden files"
+- ✅ Use terminal commands to verify: `ls -la .env.local` (macOS/Linux) or `dir .env.local` (Windows)
 
 **Problem: Login page won't load**
 - ✅ Check that the server is running: look for "Ready in" message
