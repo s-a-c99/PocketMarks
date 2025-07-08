@@ -175,6 +175,34 @@ This is the recommended path for most users. Your data will never leave your com
 5.  **Access Your Hub:** Open your browser and navigate to [http://localhost:9002](http://localhost:9002).
     **Tip:** Bookmark this address in your browser for easy access!
 
+### Managing the Development Server
+
+**To stop the server:**
+
+**Method 1:** In the terminal running the server:
+```bash
+Ctrl+C
+```
+
+**Method 2:** Force stop all Next.js processes:
+```bash
+pkill -f "next dev"
+```
+
+**Verify server is stopped:**
+```bash
+ps aux | grep next
+```
+Should only show: `grep --color=auto next` (the search command itself)
+
+**Check server resource usage (optional):**
+```bash
+ps aux | grep next
+htop
+```
+
+**Important:** The development server uses ~50-150MB RAM and minimal CPU when idle. It continues running in the background even if you close the terminal window. Always use one of the stop methods above to properly shut down the server when finished.
+
 ### Troubleshooting Login Issues
 
 **Problem: "Invalid username or password" error**
