@@ -208,11 +208,11 @@ This option is for users who want to access their bookmarks from multiple device
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fs-a-c99%2FPocketMarks&env=POCKETMARKS_USERNAME,POCKETMARKS_PASSWORD&envDescription=Enter%20a%20username%20and%20password%20to%20secure%20your%20PocketMarks%20instance.&project-name=pocketmarks-hub&repository-name=my-pocketmarks-hub)
   
 <img src="public/screenshots/Vercel.png" alt="PocketMarks on Vercel Login Interface" width="300" />  
-1.  **Click the "Deploy with Vercel" button above.**
-2.  You will be redirected to Vercel. It will prompt you to **sign up or log in, preferably using your GitHub account.** This is necessary for Vercel to create your personal copy of the code.
-3.  Vercel will then ask you to configure the project. You must enter a `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`. These are the credentials you will use to log into **your** PocketMarks app.
-4.  Click **"Deploy"**. Vercel will build and deploy the application, giving you a unique URL (e.g., `my-pocketmarks-hub.vercel.app`).  
-5.  Navigate to that URL to access your private, online version of PocketMarks.  
+1.  **Click the "Deploy with Vercel" button above.**  
+2.  You will be redirected to Vercel. It will prompt you to **sign up or log in, preferably using your GitHub account.** This is necessary for Vercel to create your personal copy of the code.  
+3.  Vercel will then ask you to configure the project. You must enter a `POCKETMARKS_USERNAME` and `POCKETMARKS_PASSWORD`. These are the credentials you will use to log into **your** PocketMarks app.  
+4.  Click **"Deploy"**. Vercel will build and deploy the application, giving you a unique URL (e.g., `my-pocketmarks-hub.vercel.app`).    
+5.  Navigate to that URL to access your private, online version of PocketMarks.    
 <img src="public/screenshots/Vercel-dashboard.png" alt="PocketMarks on Vercel dashboard" width="300" />  
 
 ---
