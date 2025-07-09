@@ -30,12 +30,18 @@ import {
   DragOverlay,
   DragStartEvent,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
+  closestCenter,
+  DragOverEvent,
 } from "@dnd-kit/core";
 import {
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import {
   SortableContext,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { arrayMove } from "@dnd-kit/sortable";
 import {
@@ -203,12 +209,16 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [overId, setOverId] = useState<string | null>(null);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
@@ -524,9 +534,14 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setIsDragging(true);
   };
 
+  const handleDragOver = (event: DragOverEvent) => {
+    setOverId(event.over?.id as string || null);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
     setIsDragging(false);
+    setOverId(null);
     
     const { active, over } = event;
     
@@ -575,6 +590,13 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             });
             // Revert on error
             setItems(initialItems);
+          } else {
+            // Success feedback
+            const activeItem = findItem(items, active.id as string);
+            toast({
+              title: "Reordered successfully",
+              description: `${activeItem?.title || 'Item'} has been moved to position ${overIndex + 1}.`,
+            });
           }
         });
       });
@@ -777,12 +799,14 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         {itemsToDisplay.length > 0 ? (
             <DndContext 
               sensors={sensors}
+              collisionDetection={closestCenter}
               onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
               onDragEnd={handleDragEnd}
             >
               <SortableContext 
                 items={itemsToDisplay.map(item => item.id)}
-                strategy={verticalListSortingStrategy}
+                strategy={rectSortingStrategy}
                 disabled={!isDragAndDropEnabled}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3">
@@ -797,6 +821,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                                 isSelected={selectedIds.has(item.id)}
                                 onSelectionChange={handleSelectionChange}
                                 isDraggable={isDragAndDropEnabled}
+                                isDropTarget={overId === item.id && isDragging}
                             />
                         ) : (
                             <BookmarkCard
@@ -809,6 +834,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                                 onSelectionChange={handleSelectionChange}
                                 onTagClick={handleTagClick}
                                 isDraggable={isDragAndDropEnabled}
+                                isDropTarget={overId === item.id && isDragging}
                             />
                         )
                     )}
@@ -817,7 +843,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               
               <DragOverlay>
                 {activeItem && (
-                  <div className="rotate-3 scale-105 opacity-90">
+                  <div className="rotate-6 scale-110 opacity-90 shadow-2xl ring-2 ring-primary/50 transform transition-transform duration-200 cursor-grabbing">
                     {activeItem.type === 'folder' ? (
                       <FolderCard
                         folder={activeItem}

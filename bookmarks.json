@@ -108,5 +108,23 @@
       "international"
     ],
     "createdAt": "2025-07-09T21:36:56.643Z"
+  },
+  {
+    "id": "182ff004-a7a2-477e-9398-a8f0eb3e2886",
+    "type": "bookmark",
+    "title": "prova1",
+    "url": "https://prova1.com",
+    "createdAt": "2025-07-09T22:51:20.000Z",
+    "tags": []
+  },
+  {
+    "id": "12648283-734f-4f4a-85ee-3b56aad698d4",
+    "type": "bookmark",
+    "title": "prova2",
+    "url": "https://prova2.com",
+    "createdAt": "2025-07-09T22:51:41.000Z",
+    "tags": [
+      "prova"
+    ]
   }
 ]

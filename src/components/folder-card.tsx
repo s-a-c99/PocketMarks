@@ -18,9 +18,10 @@ type FolderCardProps = {
   isSelected: boolean;
   onSelectionChange: (id: string, checked: boolean) => void;
   isDraggable?: boolean;
+  isDropTarget?: boolean;
 };
 
-export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange, isDraggable = false }: FolderCardProps) {
+export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange, isDraggable = false, isDropTarget = false }: FolderCardProps) {
   const { id, title } = folder;
   
   const {
@@ -44,8 +45,10 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
         style={style}
         className={cn(
           "transition-all hover:shadow-lg flex flex-col justify-between bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 p-2",
-          isDragging && "opacity-50 rotate-3 scale-105",
-          isDraggable && "cursor-grab active:cursor-grabbing"
+          isDragging && "opacity-30 rotate-2 scale-95 z-0",
+          isDraggable && "cursor-grab hover:scale-[1.02] hover:shadow-xl hover:bg-primary/25",
+          isDraggable && isDragging && "cursor-grabbing",
+          isDropTarget && "ring-2 ring-primary ring-opacity-70 bg-primary/30 scale-105 shadow-xl border-primary/60"
         )}
         {...attributes}
       >
@@ -57,8 +60,13 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                     {isDraggable && (
-                      <div {...listeners} className="flex items-center cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
-                        <GripVertical className="h-3 w-3 text-primary" />
+                      <div 
+                        {...listeners} 
+                        className="flex items-center cursor-grab active:cursor-grabbing p-1 rounded hover:bg-primary/20 transition-colors" 
+                        onClick={(e) => e.stopPropagation()}
+                        title="Drag to reorder"
+                      >
+                        <GripVertical className="h-3 w-3 text-primary hover:text-primary/80 transition-colors" />
                       </div>
                     )}
                     <FolderIcon className="h-4 w-4 text-primary shrink-0" />

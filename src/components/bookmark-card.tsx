@@ -26,9 +26,10 @@ type BookmarkCardProps = {
   onSelectionChange: (id: string, checked: boolean) => void;
   onTagClick?: (tag: string) => void;
   isDraggable?: boolean;
+  isDropTarget?: boolean;
 };
 
-export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange, onTagClick, isDraggable = false }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange, onTagClick, isDraggable = false, isDropTarget = false }: BookmarkCardProps) {
   const { id, title, url, isFavorite, tags } = bookmark;
   
   const {
@@ -52,16 +53,22 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
         style={style}
         className={cn(
           "transition-all hover:shadow-md flex flex-col justify-between p-2 gap-1",
-          isDragging && "opacity-50 rotate-3 scale-105",
-          isDraggable && "cursor-grab active:cursor-grabbing"
+          isDragging && "opacity-30 rotate-2 scale-95 z-0",
+          isDraggable && "cursor-grab hover:scale-[1.02] hover:shadow-lg",
+          isDraggable && isDragging && "cursor-grabbing",
+          isDropTarget && "ring-2 ring-primary ring-opacity-50 bg-primary/10 scale-105 shadow-lg"
         )}
         {...attributes}
       >
         <CardHeader className="flex flex-row items-start justify-between gap-2 p-0 space-y-0">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             {isDraggable && (
-              <div {...listeners} className="flex items-center cursor-grab active:cursor-grabbing mt-1">
-                <GripVertical className="h-3 w-3 text-muted-foreground" />
+              <div 
+                {...listeners} 
+                className="flex items-center cursor-grab active:cursor-grabbing mt-1 p-1 rounded hover:bg-primary/10 transition-colors"
+                title="Drag to reorder"
+              >
+                <GripVertical className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors" />
               </div>
             )}
             <a
