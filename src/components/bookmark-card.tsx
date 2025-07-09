@@ -104,13 +104,13 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
             </TooltipContent>
           </Tooltip>
            {tags && tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-                {tags.map(tag => (
+            <div className="flex flex-wrap gap-1 mt-1.5 max-h-8 overflow-hidden">
+                {tags.slice(0, 3).map(tag => (
                     <Badge 
                         key={tag} 
                         variant="secondary" 
                         className={cn(
-                            "text-xs px-1.5 py-0.5",
+                            "text-xs px-1.5 py-0.5 leading-tight",
                             onTagClick && "cursor-pointer hover:bg-primary/20 transition-colors"
                         )}
                         onClick={onTagClick ? (e) => {
@@ -122,6 +122,11 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
                         {tag}
                     </Badge>
                 ))}
+                {tags.length > 3 && (
+                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 leading-tight">
+                        +{tags.length - 3}
+                    </Badge>
+                )}
             </div>
           )}
         </CardContent>

@@ -35,6 +35,7 @@ import {
   useSensors,
   closestCenter,
   DragOverEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   sortableKeyboardCoordinates,
@@ -182,6 +183,29 @@ const deleteItemsRecursive = (items: BookmarkItem[], idsToDelete: Set<string>): 
             return item;
         });
 };
+
+function ParentDropZone({ isOver }: { isOver: boolean }) {
+  const { setNodeRef } = useDroppable({
+    id: 'move-to-parent',
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={cn(
+        "mb-4 p-4 border-2 border-dashed rounded-lg transition-all",
+        isOver 
+          ? "border-primary bg-primary/10 scale-105" 
+          : "border-muted-foreground/30 bg-muted/20"
+      )}
+    >
+      <div className="text-center text-sm text-muted-foreground">
+        <div className="font-medium">↑ Move to Parent Level</div>
+        <div className="text-xs">Drop here to move out of this folder</div>
+      </div>
+    </div>
+  );
+}
 
 
 export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] }) {
@@ -549,57 +573,191 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       return;
     }
 
-    const activeIndex = itemsToDisplay.findIndex(item => item.id === active.id);
-    const overIndex = itemsToDisplay.findIndex(item => item.id === over.id);
+    const activeItem = findItem(items, active.id as string);
     
-    if (activeIndex !== -1 && overIndex !== -1) {
-      const newItems = arrayMove(itemsToDisplay, activeIndex, overIndex);
+    if (!activeItem) return;
+
+    // Check if moving to parent level
+    if (over.id === 'move-to-parent' && currentFolderId) {
+      const parentFolder = currentPath[currentPath.length - 2]; // Get parent of current folder
+      const targetParentId = parentFolder ? parentFolder.id : null; // null means root level
       
-      // Update local state immediately for smooth UX
+      // Move item to parent level
       setItems(current => {
-        const updateItemsRecursively = (items: BookmarkItem[]): BookmarkItem[] => {
-          if (currentFolder) {
-            return items.map(item => {
-              if (item.type === 'folder' && item.id === currentFolder.id) {
-                return { ...item, children: newItems };
-              }
+        const removeItemRecursively = (items: BookmarkItem[], itemId: string): BookmarkItem[] => {
+          return items
+            .filter(item => item.id !== itemId)
+            .map(item => {
               if (item.type === 'folder') {
-                return { ...item, children: updateItemsRecursively(item.children) };
+                return { ...item, children: removeItemRecursively(item.children, itemId) };
               }
               return item;
             });
-          }
-          return newItems;
         };
-        
-        return updateItemsRecursively(current);
+
+        const addItemToLevel = (items: BookmarkItem[], parentId: string | null, newItem: BookmarkItem): BookmarkItem[] => {
+          if (!parentId) {
+            // Add to root level
+            return [...items, newItem];
+          }
+          return items.map(item => {
+            if (item.type === 'folder' && item.id === parentId) {
+              return { ...item, children: [...item.children, newItem] };
+            }
+            if (item.type === 'folder') {
+              return { ...item, children: addItemToLevel(item.children, parentId, newItem) };
+            }
+            return item;
+          });
+        };
+
+        let updatedItems = removeItemRecursively(current, activeItem.id);
+        updatedItems = addItemToLevel(updatedItems, targetParentId, activeItem);
+        return updatedItems;
       });
-      
+
       // Save to server
       startTransition(() => {
-        reorderItemsAction(
-          active.id as string,
-          overIndex,
-          currentFolderId || undefined
-        ).then((result) => {
-          if (result.error) {
-            toast({
-              variant: "destructive",
-              title: "Reorder Failed",
-              description: result.error,
-            });
-            // Revert on error
-            setItems(initialItems);
-          } else {
-            // Success feedback
-            const activeItem = findItem(items, active.id as string);
-            toast({
-              title: "Reordered successfully",
-              description: `${activeItem?.title || 'Item'} has been moved to position ${overIndex + 1}.`,
-            });
-          }
+        saveItemAction(activeItem, targetParentId).then(() => {
+          toast({
+            title: "Moved to parent level",
+            description: `${activeItem.title} has been moved ${targetParentId ? 'to parent folder' : 'to root level'}.`,
+          });
+        }).catch(() => {
+          toast({
+            variant: "destructive",
+            title: "Move Failed",
+            description: "Could not move item to parent level.",
+          });
+          setItems(items);
         });
       });
+      return;
+    }
+
+    const overItem = findItem(items, over.id as string);
+    if (!overItem) return;
+
+    // Check if dropping into a folder
+    if (overItem.type === 'folder') {
+      // Move item into the folder
+      setItems(current => {
+        const removeItemRecursively = (items: BookmarkItem[], itemId: string): BookmarkItem[] => {
+          return items
+            .filter(item => item.id !== itemId)
+            .map(item => {
+              if (item.type === 'folder') {
+                return { ...item, children: removeItemRecursively(item.children, itemId) };
+              }
+              return item;
+            });
+        };
+
+        const addItemToFolder = (items: BookmarkItem[], folderId: string, newItem: BookmarkItem): BookmarkItem[] => {
+          return items.map(item => {
+            if (item.type === 'folder' && item.id === folderId) {
+              return { ...item, children: [...item.children, newItem] };
+            }
+            if (item.type === 'folder') {
+              return { ...item, children: addItemToFolder(item.children, folderId, newItem) };
+            }
+            return item;
+          });
+        };
+
+        let updatedItems = removeItemRecursively(current, activeItem.id);
+        updatedItems = addItemToFolder(updatedItems, overItem.id, activeItem);
+        return updatedItems;
+      });
+
+      // Save to server - move to folder
+      startTransition(() => {
+        saveItemAction(activeItem, overItem.id).then(() => {
+          toast({
+            title: "Moved to folder",
+            description: `${activeItem.title} has been moved to "${overItem.title}".`,
+          });
+        }).catch(() => {
+          toast({
+            variant: "destructive",
+            title: "Move Failed",
+            description: "Could not move item to folder.",
+          });
+          // Revert on error
+          setItems(items);
+        });
+      });
+    } else {
+      // Regular reordering within same level
+      const activeIndex = itemsToDisplay.findIndex(item => item.id === active.id);
+      const overIndex = itemsToDisplay.findIndex(item => item.id === over.id);
+      
+      if (activeIndex !== -1 && overIndex !== -1) {
+        const newItems = arrayMove(itemsToDisplay, activeIndex, overIndex);
+        
+        // Update local state immediately for smooth UX
+        setItems(current => {
+          const updateItemsRecursively = (items: BookmarkItem[]): BookmarkItem[] => {
+            if (currentFolder) {
+              return items.map(item => {
+                if (item.type === 'folder' && item.id === currentFolder.id) {
+                  return { ...item, children: newItems };
+                }
+                if (item.type === 'folder') {
+                  return { ...item, children: updateItemsRecursively(item.children) };
+                }
+                return item;
+              });
+            }
+            return newItems;
+          };
+          
+          return updateItemsRecursively(current);
+        });
+        
+        // Save to server
+        startTransition(() => {
+          reorderItemsAction(
+            active.id as string,
+            overIndex,
+            currentFolderId || undefined
+          ).then((result) => {
+            if (result.error) {
+              toast({
+                variant: "destructive",
+                title: "Reorder Failed",
+                description: result.error,
+              });
+              // Revert on error - restore previous state instead of initialItems
+              setItems(current => {
+                const revertItemsRecursively = (items: BookmarkItem[]): BookmarkItem[] => {
+                  if (currentFolder) {
+                    return items.map(item => {
+                      if (item.type === 'folder' && item.id === currentFolder.id) {
+                        return { ...item, children: itemsToDisplay };
+                      }
+                      if (item.type === 'folder') {
+                        return { ...item, children: revertItemsRecursively(item.children) };
+                      }
+                      return item;
+                    });
+                  }
+                  return itemsToDisplay;
+                };
+                
+                return revertItemsRecursively(current);
+              });
+            } else {
+              // Success feedback
+              const activeItem = findItem(items, active.id as string);
+              toast({
+                title: "Reordered successfully",
+                description: `${activeItem?.title || 'Item'} has been moved to position ${overIndex + 1}.`,
+              });
+            }
+          });
+        });
+      }
     }
   };
 
@@ -809,6 +967,11 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 strategy={rectSortingStrategy}
                 disabled={!isDragAndDropEnabled}
               >
+                {/* Move to Parent Drop Zone - only show when in a folder and dragging */}
+                {currentFolderId && isDragging && (
+                  <ParentDropZone isOver={overId === 'move-to-parent'} />
+                )}
+                
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3">
                     {itemsToDisplay.map(item =>
                         item.type === 'folder' ? (

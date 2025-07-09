@@ -29,16 +29,18 @@ const prompt = ai.definePrompt({
   name: 'suggestTagsPrompt',
   input: {schema: SuggestTagsInputSchema},
   output: {schema: SuggestTagsOutputSchema},
-  prompt: `Based on the title and URL of the bookmark provided, suggest exactly 3 most relevant, essential, one-word, lowercase tags that best categorize this bookmark. Focus on the primary purpose, technology, or domain of the site.
+  prompt: `Based on the title and URL of the bookmark provided, suggest exactly 3 most relevant, essential, SHORT lowercase tags that best categorize this bookmark. Focus on the primary purpose, technology, or domain of the site.
 
 URL: {{{url}}}
 Title: {{{title}}}
 
 Guidelines:
+- Use the SHORTEST possible words (3-5 characters preferred, max 8 characters)
 - Choose only the most essential tags that accurately describe the bookmark's purpose
-- Prefer broader, more useful categories over specific details
-- Use common, searchable terms that would help organize bookmarks
+- Prefer abbreviations and short forms: "dev" not "development", "js" not "javascript", "ai" not "artificial-intelligence"
+- Use common, searchable short terms that would help organize bookmarks
 - Avoid redundant or overly specific tags
+- Examples of good short tags: "dev", "js", "ai", "docs", "tool", "news", "blog", "api", "code", "web", "app", "game", "video", "music", "shop", "work", "learn"
 `,config: {
     safetySettings: [
       {
