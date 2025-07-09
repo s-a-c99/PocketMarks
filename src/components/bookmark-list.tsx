@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2, Import, Download } from "lucide-react";
+import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2, Import, Download, X, ExternalLink } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder, Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -129,6 +129,27 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
   return searchRecursive(items);
 }
 
+function filterItemsByTag(items: BookmarkItem[], tag: string): BookmarkItem[] {
+  if (!tag) return items;
+  
+  const filterRecursive = (items: BookmarkItem[]): BookmarkItem[] => {
+    const found: BookmarkItem[] = [];
+    for (const item of items) {
+      if (item.type === 'bookmark' && item.tags?.includes(tag)) {
+        found.push(item);
+      } else if (item.type === 'folder') {
+        const filteredChildren = filterRecursive(item.children);
+        if (filteredChildren.length > 0) {
+          found.push({ ...item, children: filteredChildren });
+        }
+      }
+    }
+    return found;
+  };
+  
+  return filterRecursive(items);
+}
+
 const deleteItemsRecursive = (items: BookmarkItem[], idsToDelete: Set<string>): BookmarkItem[] => {
     return items
         .filter(item => !idsToDelete.has(item.id))
@@ -162,6 +183,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('date-desc');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   useEffect(() => {
     setItems(initialItems);
@@ -173,11 +195,18 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const currentPath = useMemo(() => currentFolderId ? findPath(sortedItems, currentFolderId) : [], [sortedItems, currentFolderId]);
   
   const itemsToDisplay = useMemo(() => {
+      let itemsToFilter = currentFolder ? currentFolder.children : sortedItems;
+      
       if (searchTerm) {
-          return filterItems(sortedItems, searchTerm);
+          itemsToFilter = filterItems(itemsToFilter, searchTerm);
       }
-      return currentFolder ? currentFolder.children : sortedItems;
-  }, [searchTerm, sortedItems, currentFolder]);
+      
+      if (selectedTag) {
+          itemsToFilter = filterItemsByTag(itemsToFilter, selectedTag);
+      }
+      
+      return itemsToFilter;
+  }, [searchTerm, selectedTag, sortedItems, currentFolder]);
 
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
@@ -328,6 +357,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 toast({ variant: "destructive", title: "Merge Failed", description: result.error });
             } else {
                 toast({ title: "Merge Successful", description: "Selected items have been added." });
+                setIsSyncDialogOpen(false);
             }
         });
     });
@@ -444,6 +474,71 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         toggleFavoriteAction(id);
     });
   }
+
+  const handleTagClick = (tag: string) => {
+    setSelectedTag(tag);
+    setSearchTerm('');
+  };
+
+  const handleClearTagFilter = () => {
+    setSelectedTag(null);
+  };
+
+  const getBookmarksFromSelection = (): Bookmark[] => {
+    const bookmarks: Bookmark[] = [];
+    const processItem = (item: BookmarkItem) => {
+      if (item.type === 'bookmark') {
+        bookmarks.push(item);
+      } else if (item.type === 'folder') {
+        item.children.forEach(processItem);
+      }
+    };
+    
+    items.forEach(item => {
+      if (selectedIds.has(item.id)) {
+        processItem(item);
+      }
+    });
+    
+    return bookmarks;
+  };
+
+  const handleOpenAll = () => {
+    const bookmarks = getBookmarksFromSelection();
+    if (bookmarks.length > 10) {
+      const confirmed = confirm(`This will open ${bookmarks.length} bookmarks. Are you sure?`);
+      if (!confirmed) return;
+    }
+    
+    bookmarks.forEach(bookmark => {
+      window.open(bookmark.url, '_blank');
+    });
+    
+    toast({
+      title: "Opened bookmarks",
+      description: `${bookmarks.length} bookmarks opened in new tabs.`
+    });
+  };
+
+  const handleOpenInNewTab = () => {
+    const bookmarks = getBookmarksFromSelection();
+    if (bookmarks.length === 0) return;
+    
+    if (bookmarks.length > 10) {
+      const confirmed = confirm(`This will open ${bookmarks.length} bookmarks. Are you sure?`);
+      if (!confirmed) return;
+    }
+    
+    bookmarks.forEach(bookmark => {
+      window.open(bookmark.url, '_blank');
+    });
+    
+    setSelectedIds(new Set());
+    toast({
+      title: "Opened bookmarks",
+      description: `${bookmarks.length} bookmarks opened in new tabs.`
+    });
+  };
   
   return (
     <div className="w-full">
@@ -473,6 +568,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                   <Ban className="mr-2 h-4 w-4" />
                   Clear Selection ({selectedIds.size})
                 </Button>
+                <Button variant="outline" className="font-headline h-11" onClick={handleOpenInNewTab} disabled={isPending}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open All
+                </Button>
                 <Button variant="destructive" className="font-headline h-11" onClick={() => setIsConfirmingMultiDelete(true)} disabled={isPending}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Selected
@@ -484,7 +583,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               <Input
                   placeholder="Search bookmarks..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    if (e.target.value) setSelectedTag(null);
+                  }}
                   className="pl-10 h-11 text-base w-full"
                   disabled={isPending}
               />
@@ -523,7 +625,44 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             </div>
         </div>
 
-        {!searchTerm && <BreadcrumbNav path={currentPath} onNavigate={setCurrentFolderId} />}
+        {!searchTerm && !selectedTag && <BreadcrumbNav path={currentPath} onNavigate={setCurrentFolderId} />}
+        
+        {selectedTag && (
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="text-sm text-muted-foreground">Filtered by tag:</span>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleClearTagFilter}
+              className="h-8"
+            >
+              {selectedTag}
+              <X className="ml-2 h-3 w-3" />
+            </Button>
+            {itemsToDisplay.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const bookmarks = itemsToDisplay.filter(item => item.type === 'bookmark') as Bookmark[];
+                  if (bookmarks.length > 10) {
+                    const confirmed = confirm(`This will open ${bookmarks.length} bookmarks. Are you sure?`);
+                    if (!confirmed) return;
+                  }
+                  bookmarks.forEach(bookmark => window.open(bookmark.url, '_blank'));
+                  toast({
+                    title: "Opened bookmarks",
+                    description: `${bookmarks.length} bookmarks with tag "${selectedTag}" opened.`
+                  });
+                }}
+                className="h-8"
+              >
+                <ExternalLink className="mr-2 h-3 w-3" />
+                Open All ({itemsToDisplay.filter(item => item.type === 'bookmark').length})
+              </Button>
+            )}
+          </div>
+        )}
 
         {itemsToDisplay.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3">
@@ -547,6 +686,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                             onToggleFavorite={handleToggleFavorite}
                             isSelected={selectedIds.has(item.id)}
                             onSelectionChange={handleSelectionChange}
+                            onTagClick={handleTagClick}
                         />
                     )
                 )}

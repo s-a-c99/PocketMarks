@@ -21,9 +21,10 @@ type BookmarkCardProps = {
   onToggleFavorite: (id: string) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, checked: boolean) => void;
+  onTagClick?: (tag: string) => void;
 };
 
-export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange, onTagClick }: BookmarkCardProps) {
   const { id, title, url, isFavorite, tags } = bookmark;
 
   return (
@@ -64,7 +65,21 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
            {tags && tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1.5">
                 {tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>
+                    <Badge 
+                        key={tag} 
+                        variant="secondary" 
+                        className={cn(
+                            "text-xs px-1.5 py-0.5",
+                            onTagClick && "cursor-pointer hover:bg-primary/20 transition-colors"
+                        )}
+                        onClick={onTagClick ? (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onTagClick(tag);
+                        } : undefined}
+                    >
+                        {tag}
+                    </Badge>
                 ))}
             </div>
           )}

@@ -17,7 +17,7 @@ const SuggestTagsInputSchema = z.object({
 export type SuggestTagsInput = z.infer<typeof SuggestTagsInputSchema>;
 
 const SuggestTagsOutputSchema = z.object({
-  tags: z.array(z.string()).describe('An array of 3 to 5 suggested tags.'),
+  tags: z.array(z.string()).max(3).describe('An array of exactly 3 most relevant, essential tags.'),
 });
 export type SuggestTagsOutput = z.infer<typeof SuggestTagsOutputSchema>;
 
@@ -29,10 +29,16 @@ const prompt = ai.definePrompt({
   name: 'suggestTagsPrompt',
   input: {schema: SuggestTagsInputSchema},
   output: {schema: SuggestTagsOutputSchema},
-  prompt: `Based on the title and URL of the bookmark provided, suggest a list of 3 to 5 relevant, one-word, lowercase tags.
+  prompt: `Based on the title and URL of the bookmark provided, suggest exactly 3 most relevant, essential, one-word, lowercase tags that best categorize this bookmark. Focus on the primary purpose, technology, or domain of the site.
 
 URL: {{{url}}}
 Title: {{{title}}}
+
+Guidelines:
+- Choose only the most essential tags that accurately describe the bookmark's purpose
+- Prefer broader, more useful categories over specific details
+- Use common, searchable terms that would help organize bookmarks
+- Avoid redundant or overly specific tags
 `,config: {
     safetySettings: [
       {

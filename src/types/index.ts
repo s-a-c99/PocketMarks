@@ -17,3 +17,8 @@ export type Folder = {
 };
 
 export type BookmarkItem = Bookmark | Folder;
+
+export type TagPreferences = {
+  deletedTags: Set<string>;
+  customTags: Set<string>;
+};

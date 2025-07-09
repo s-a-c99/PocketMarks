@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Loader2, X, Plus } from "lucide-react";
 import type { BookmarkItem } from "@/types";
 import { suggestTagsAction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +51,9 @@ type ItemDialogProps = {
 export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemDialogProps) {
   const [itemType, setItemType] = useState<'bookmark' | 'folder'>('bookmark');
   const [isSuggesting, startSuggestionTransition] = useTransition();
+  const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [deletedTags, setDeletedTags] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -68,19 +72,22 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
     if (isOpen) {
         const type = itemToEdit?.type || 'bookmark';
         setItemType(type);
+        const existingTags = itemToEdit?.type === 'bookmark' ? (itemToEdit.tags || []) : [];
+        setCurrentTags(existingTags);
+        setTagInput('');
+        setDeletedTags(new Set());
         form.reset({
             type: type,
             title: itemToEdit?.title || "",
             url: itemToEdit?.type === 'bookmark' ? itemToEdit.url : "",
-            tags: itemToEdit?.type === 'bookmark' ? (itemToEdit.tags || []).join(', ') : "",
+            tags: existingTags.join(', '),
         });
     }
   }, [itemToEdit, isOpen, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const tagsArray = values.tags ? values.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     const itemData = values.type === 'bookmark'
-        ? { type: 'bookmark' as const, title: values.title, url: values.url!, tags: tagsArray }
+        ? { type: 'bookmark' as const, title: values.title, url: values.url!, tags: currentTags }
         : { type: 'folder' as const, title: values.title };
 
     onItemSaved(itemData as FormValues);
@@ -105,14 +112,41 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
                 description: result.error,
             });
         } else if (result.tags) {
-            form.setValue('tags', result.tags.join(', '));
+            const filteredTags = result.tags.filter(tag => !deletedTags.has(tag));
+            const newTags = [...new Set([...currentTags, ...filteredTags])];
+            setCurrentTags(newTags);
+            form.setValue('tags', newTags.join(', '));
             toast({
                 title: "Tags Suggested",
-                description: "AI-powered tags have been added.",
+                description: filteredTags.length > 0 ? "AI-powered tags have been added." : "AI suggested tags were previously deleted.",
             });
         }
     });
   }
+
+  const handleAddTag = () => {
+    if (tagInput.trim() && !currentTags.includes(tagInput.trim())) {
+        const newTag = tagInput.trim().toLowerCase();
+        const newTags = [...currentTags, newTag];
+        setCurrentTags(newTags);
+        form.setValue('tags', newTags.join(', '));
+        setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const newTags = currentTags.filter(tag => tag !== tagToRemove);
+    setCurrentTags(newTags);
+    form.setValue('tags', newTags.join(', '));
+    setDeletedTags(prev => new Set([...prev, tagToRemove]));
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAddTag();
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -199,7 +233,7 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex justify-between items-center">
-                        <FormLabel>Tags (comma-separated)</FormLabel>
+                        <FormLabel>Tags</FormLabel>
                         <Button type="button" variant="outline" size="sm" onClick={handleSuggestTags} disabled={isSuggesting}>
                             {isSuggesting ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -209,8 +243,50 @@ export function ItemDialog({ isOpen, setIsOpen, onItemSaved, itemToEdit }: ItemD
                             Suggest
                         </Button>
                       </div>
+                      
+                      {/* Current Tags Display */}
+                      {currentTags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {currentTags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 ml-1 hover:bg-transparent"
+                                onClick={() => handleRemoveTag(tag)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Add New Tag Input */}
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add new tag..."
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={handleTagInputKeyDown}
+                          className="flex-1"
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleAddTag}
+                          disabled={!tagInput.trim() || currentTags.includes(tagInput.trim())}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Hidden input to maintain form compatibility */}
                       <FormControl>
-                        <Input placeholder="design, tools, inspiration" {...field} />
+                        <Input {...field} className="hidden" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
