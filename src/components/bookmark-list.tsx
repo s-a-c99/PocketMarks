@@ -22,7 +22,22 @@ import {
   exportSelectedBookmarksAction,
   toggleFavoriteAction,
   deleteSelectedItemsAction,
+  reorderItemsAction,
 } from "@/lib/actions";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { arrayMove } from "@dnd-kit/sortable";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -110,6 +125,7 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
     for (const item of items) {
       const titleMatch = item.title.toLowerCase().includes(lowerCaseTerm);
       const urlMatch = item.type === 'bookmark' && item.url.toLowerCase().includes(lowerCaseTerm);
+      const tagMatch = item.type === 'bookmark' && item.tags?.some(tag => tag.toLowerCase().includes(lowerCaseTerm));
       
       if (item.type === 'folder') {
         const childrenResults = searchRecursive(item.children);
@@ -119,7 +135,7 @@ function filterItems(items: BookmarkItem[], term: string): BookmarkItem[] {
         } else {
             found.push(...childrenResults);
         }
-      } else if (titleMatch || urlMatch) {
+      } else if (titleMatch || urlMatch || tagMatch) {
         found.push(item);
       }
     }
@@ -169,6 +185,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isConfirmingMultiDelete, setIsConfirmingMultiDelete] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -184,10 +201,28 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('date-desc');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
   
   const sortedItems = useMemo(() => sortItems(items, sortBy), [items, sortBy]);
   
@@ -197,8 +232,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const itemsToDisplay = useMemo(() => {
       let itemsToFilter = currentFolder ? currentFolder.children : sortedItems;
       
-      if (searchTerm) {
-          itemsToFilter = filterItems(itemsToFilter, searchTerm);
+      if (debouncedSearchTerm) {
+          itemsToFilter = filterItems(itemsToFilter, debouncedSearchTerm);
       }
       
       if (selectedTag) {
@@ -206,7 +241,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       }
       
       return itemsToFilter;
-  }, [searchTerm, selectedTag, sortedItems, currentFolder]);
+  }, [debouncedSearchTerm, selectedTag, sortedItems, currentFolder]);
 
   const handleAddNewBookmark = () => {
     setItemToEdit(null);
@@ -484,6 +519,68 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setSelectedTag(null);
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    setIsDragging(false);
+    
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeIndex = itemsToDisplay.findIndex(item => item.id === active.id);
+    const overIndex = itemsToDisplay.findIndex(item => item.id === over.id);
+    
+    if (activeIndex !== -1 && overIndex !== -1) {
+      const newItems = arrayMove(itemsToDisplay, activeIndex, overIndex);
+      
+      // Update local state immediately for smooth UX
+      setItems(current => {
+        const updateItemsRecursively = (items: BookmarkItem[]): BookmarkItem[] => {
+          if (currentFolder) {
+            return items.map(item => {
+              if (item.type === 'folder' && item.id === currentFolder.id) {
+                return { ...item, children: newItems };
+              }
+              if (item.type === 'folder') {
+                return { ...item, children: updateItemsRecursively(item.children) };
+              }
+              return item;
+            });
+          }
+          return newItems;
+        };
+        
+        return updateItemsRecursively(current);
+      });
+      
+      // Save to server
+      startTransition(() => {
+        reorderItemsAction(
+          active.id as string,
+          overIndex,
+          currentFolderId || undefined
+        ).then((result) => {
+          if (result.error) {
+            toast({
+              variant: "destructive",
+              title: "Reorder Failed",
+              description: result.error,
+            });
+            // Revert on error
+            setItems(initialItems);
+          }
+        });
+      });
+    }
+  };
+
   const getBookmarksFromSelection = (): Bookmark[] => {
     const bookmarks: Bookmark[] = [];
     const processItem = (item: BookmarkItem) => {
@@ -540,6 +637,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     });
   };
   
+  const isDragAndDropEnabled = !debouncedSearchTerm && !selectedTag && sortBy === 'date-desc';
+  const activeItem = activeId ? findItem(items, activeId) : null;
+
   return (
     <div className="w-full">
         <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -548,12 +648,17 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                <SelectItem value="date-desc">Date (Newest) {isDragAndDropEnabled && "🔄"}</SelectItem>
                 <SelectItem value="date-asc">Date (Oldest)</SelectItem>
                 <SelectItem value="alpha-asc">Name (A-Z)</SelectItem>
                 <SelectItem value="alpha-desc">Name (Z-A)</SelectItem>
               </SelectContent>
             </Select>
+            {isDragAndDropEnabled && (
+              <span className="text-xs text-muted-foreground hidden sm:block">
+                Drag & drop enabled
+              </span>
+            )}
 
             <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending}>
                 <Plus className="mr-2 h-4 w-4" /> Add Bookmark
@@ -581,7 +686,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
             <div className="relative flex-grow min-w-[200px] sm:min-w-0 sm:flex-1">
               <Input
-                  placeholder="Search bookmarks..."
+                  placeholder="Search bookmarks, URLs, tags..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -591,6 +696,11 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                   disabled={isPending}
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              {searchTerm && searchTerm !== debouncedSearchTerm && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
             </div>
             
             <div className="flex gap-2">
@@ -625,7 +735,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
             </div>
         </div>
 
-        {!searchTerm && !selectedTag && <BreadcrumbNav path={currentPath} onNavigate={setCurrentFolderId} />}
+        {!debouncedSearchTerm && !selectedTag && <BreadcrumbNav path={currentPath} onNavigate={setCurrentFolderId} />}
         
         {selectedTag && (
           <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -665,37 +775,79 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         )}
 
         {itemsToDisplay.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3">
-                {itemsToDisplay.map(item =>
-                    item.type === 'folder' ? (
-                        <FolderCard
-                            key={item.id}
-                            folder={item}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                            onNavigate={setCurrentFolderId}
-                            isSelected={selectedIds.has(item.id)}
-                            onSelectionChange={handleSelectionChange}
-                        />
+            <DndContext 
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={itemsToDisplay.map(item => item.id)}
+                strategy={verticalListSortingStrategy}
+                disabled={!isDragAndDropEnabled}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3">
+                    {itemsToDisplay.map(item =>
+                        item.type === 'folder' ? (
+                            <FolderCard
+                                key={item.id}
+                                folder={item}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                                onNavigate={setCurrentFolderId}
+                                isSelected={selectedIds.has(item.id)}
+                                onSelectionChange={handleSelectionChange}
+                                isDraggable={isDragAndDropEnabled}
+                            />
+                        ) : (
+                            <BookmarkCard
+                                key={item.id}
+                                bookmark={item}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                                onToggleFavorite={handleToggleFavorite}
+                                isSelected={selectedIds.has(item.id)}
+                                onSelectionChange={handleSelectionChange}
+                                onTagClick={handleTagClick}
+                                isDraggable={isDragAndDropEnabled}
+                            />
+                        )
+                    )}
+                </div>
+              </SortableContext>
+              
+              <DragOverlay>
+                {activeItem && (
+                  <div className="rotate-3 scale-105 opacity-90">
+                    {activeItem.type === 'folder' ? (
+                      <FolderCard
+                        folder={activeItem}
+                        onEdit={() => {}}
+                        onDelete={() => {}}
+                        onNavigate={() => {}}
+                        isSelected={false}
+                        onSelectionChange={() => {}}
+                        isDraggable={false}
+                      />
                     ) : (
-                        <BookmarkCard
-                            key={item.id}
-                            bookmark={item}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                            onToggleFavorite={handleToggleFavorite}
-                            isSelected={selectedIds.has(item.id)}
-                            onSelectionChange={handleSelectionChange}
-                            onTagClick={handleTagClick}
-                        />
-                    )
+                      <BookmarkCard
+                        bookmark={activeItem}
+                        onEdit={() => {}}
+                        onDelete={() => {}}
+                        onToggleFavorite={() => {}}
+                        isSelected={false}
+                        onSelectionChange={() => {}}
+                        isDraggable={false}
+                      />
+                    )}
+                  </div>
                 )}
-            </div>
+              </DragOverlay>
+            </DndContext>
         ) : (
             <div className="text-center py-16 border-2 border-dashed rounded-lg">
                 <h3 className="text-2xl font-semibold text-muted-foreground font-headline">No Bookmarks Found</h3>
                 <p className="mt-2 text-muted-foreground">
-                    {searchTerm ? "Try a different search term. " : "This folder is empty. "}
+                    {debouncedSearchTerm ? "Try a different search term. " : "This folder is empty. "}
                     <button onClick={handleAddNewBookmark} className="text-primary hover:underline font-semibold">Add a new bookmark</button> or
                     <button onClick={handleAddNewFolder} className="text-primary hover:underline font-semibold ml-1">folder</button>.
                 </p>

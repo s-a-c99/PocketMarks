@@ -15,7 +15,8 @@ import {
   createBackup,
   parseAndCompareBookmarks,
   parseBookmarks,
-  toggleFavoriteStatus
+  toggleFavoriteStatus,
+  reorderItems
 } from './bookmark-service';
 import type { BookmarkItem } from '@/types';
 import { suggestTags, type SuggestTagsInput } from '@/ai/flows/suggest-tags';
@@ -164,5 +165,16 @@ export async function suggestTagsAction(input: SuggestTagsInput): Promise<{ tags
         return { error: 'Your Google AI API key is invalid or missing.' };
     }
     return { error: 'Failed to suggest tags. Please check server logs for details.' };
+  }
+}
+
+export async function reorderItemsAction(itemId: string, newPosition: number, parentId?: string): Promise<{ error?: string }> {
+  try {
+    await reorderItems(itemId, newPosition, parentId);
+    revalidatePath('/bookmarks');
+    return {};
+  } catch (error: any) {
+    console.error("Error reordering items:", error);
+    return { error: 'Failed to reorder items. Please try again.' };
   }
 }

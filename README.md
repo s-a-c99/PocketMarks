@@ -23,7 +23,11 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 - **Robust Import/Export:** Import from any browser and export all or a selection of your bookmarks to a standard HTML file. This is perfect for backups, sharing, or creating curated context files for AI projects.
 - **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists and asks for confirmation.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
-- **(Optional) AI-Powered Tag Suggestions:** By providing your own Google AI API key, you can enable an agent to automatically suggest relevant tags for your bookmarks, making organization even faster.
+- **Advanced Tag Management:** Comprehensive tag system with manual input, AI suggestions, click-to-filter, and bulk operations.
+- **Drag & Drop Reordering:** Intuitive drag and drop functionality to reorder bookmarks and folders with automatic saving.
+- **Enhanced Search:** Global search across bookmark titles, URLs, and tags with real-time results and debounced input.
+- **Multi-Select Operations:** Select multiple bookmarks and folders for bulk operations like "Open All" or batch deletion.
+- **(Optional) AI-Powered Tag Suggestions:** By providing your own Google AI API key, you can enable an agent to automatically suggest up to 3 relevant tags for your bookmarks, making organization even faster.
 
 ## Screenshots
 
@@ -49,6 +53,36 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 <img src="public/screenshots/analytics-dashboard-dark.png" alt="PocketMarks Analytics Dashboard - Dark Mode" width="1600" />
 
 *Analytics dashboard in dark mode with visual charts and domain distribution*
+
+## Advanced Features
+
+### 🏷️ Advanced Tag Management
+- **Manual Tag Input:** Add custom tags with a dedicated input field and autocomplete
+- **AI-Powered Suggestions:** Get up to 3 relevant tags automatically suggested by AI
+- **Smart Memory:** Deleted tags are remembered and won't be re-suggested
+- **Click-to-Filter:** Click any tag to instantly filter bookmarks showing only that tag
+- **Bulk Operations:** "Open All" button for tag-filtered results with confirmation dialogs
+
+### 🔄 Drag & Drop Reordering
+- **Intuitive Reordering:** Drag and drop bookmarks and folders to reorder them
+- **Cross-Folder Movement:** Move bookmarks between different folders seamlessly
+- **Visual Feedback:** Drag indicators, hover effects, and smooth animations
+- **Auto-Save:** All changes are automatically saved to bookmarks.json
+- **Smart Constraints:** Drag & drop only enabled when sorting by "Date (Newest)" without active filters
+
+### 🔍 Enhanced Search
+- **Global Search:** Search across bookmark titles, URLs, and tags simultaneously
+- **Real-Time Results:** Debounced search with loading indicators for smooth performance
+- **Instant Filtering:** Results update as you type with 300ms debounce
+- **Clear Visual Feedback:** Loading spinner shows when search is processing
+- **Enhanced Placeholder:** Clear indication of what can be searched
+
+### 📦 Multi-Select Operations
+- **Bulk Selection:** Select multiple bookmarks and folders with checkboxes
+- **Open All:** Open all selected bookmarks in new tabs with confirmation for large sets
+- **Batch Operations:** Delete multiple items at once with confirmation dialogs
+- **Smart Counting:** Visual indicators show how many items are selected
+- **Hierarchical Selection:** Selecting a folder automatically selects all its contents
 
 ## Getting Started
 

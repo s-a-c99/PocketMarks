@@ -359,3 +359,92 @@ export async function createBackup(): Promise<void> {
   const backupFilePath = path.join(backupsDir, `bookmarks-${timestamp}.json`);
   await fs.writeFile(backupFilePath, JSON.stringify(currentBookmarks, null, 2), 'utf-8');
 }
+
+export async function reorderItems(itemId: string, newPosition: number, parentId?: string): Promise<void> {
+  const bookmarks = await readBookmarksFile();
+  
+  const reorderRecursive = (items: BookmarkItem[], targetParentId?: string): BookmarkItem[] => {
+    let itemToMove: BookmarkItem | null = null;
+    let sourceIndex = -1;
+    
+    // Find and extract the item to move
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].id === itemId) {
+        itemToMove = items[i];
+        sourceIndex = i;
+        break;
+      }
+      if (items[i].type === 'folder') {
+        const result = reorderRecursive(items[i].children, targetParentId);
+        if (result !== items[i].children) {
+          items[i] = { ...items[i], children: result };
+        }
+      }
+    }
+    
+    // If we found the item to move and this is the target parent
+    if (itemToMove && (!targetParentId || targetParentId === 'root')) {
+      // Remove from source
+      const newItems = [...items];
+      newItems.splice(sourceIndex, 1);
+      
+      // Insert at new position
+      const targetIndex = Math.min(newPosition, newItems.length);
+      newItems.splice(targetIndex, 0, itemToMove);
+      
+      return newItems;
+    }
+    
+    return items;
+  };
+  
+  const reorderInFolder = (items: BookmarkItem[], targetParentId: string): BookmarkItem[] => {
+    return items.map(item => {
+      if (item.type === 'folder') {
+        if (item.id === targetParentId) {
+          // This is the target folder, perform reorder within it
+          let itemToMove: BookmarkItem | null = null;
+          
+          // Find item in current folder or extract from elsewhere
+          const extractItem = (searchItems: BookmarkItem[]): BookmarkItem | null => {
+            for (let i = 0; i < searchItems.length; i++) {
+              if (searchItems[i].id === itemId) {
+                const extracted = searchItems[i];
+                searchItems.splice(i, 1);
+                return extracted;
+              }
+              if (searchItems[i].type === 'folder') {
+                const result = extractItem(searchItems[i].children);
+                if (result) return result;
+              }
+            }
+            return null;
+          };
+          
+          itemToMove = extractItem(bookmarks);
+          
+          if (itemToMove) {
+            const newChildren = [...item.children];
+            const targetIndex = Math.min(newPosition, newChildren.length);
+            newChildren.splice(targetIndex, 0, itemToMove);
+            return { ...item, children: newChildren };
+          }
+        } else {
+          // Recursively search in other folders
+          return { ...item, children: reorderInFolder(item.children, targetParentId) };
+        }
+      }
+      return item;
+    });
+  };
+  
+  let updatedBookmarks: BookmarkItem[];
+  
+  if (parentId && parentId !== 'root') {
+    updatedBookmarks = reorderInFolder(bookmarks, parentId);
+  } else {
+    updatedBookmarks = reorderRecursive(bookmarks);
+  }
+  
+  await writeBookmarksFile(updatedBookmarks);
+}

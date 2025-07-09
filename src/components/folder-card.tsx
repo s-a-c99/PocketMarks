@@ -1,12 +1,14 @@
 "use client";
 
-import { Folder as FolderIcon, Pencil, Trash2 } from "lucide-react";
+import { Folder as FolderIcon, Pencil, Trash2, GripVertical } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Folder } from "@/types";
 import { cn } from "@/lib/utils";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type FolderCardProps = {
   folder: Folder;
@@ -15,14 +17,38 @@ type FolderCardProps = {
   onNavigate: (id: string) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, checked: boolean) => void;
+  isDraggable?: boolean;
 };
 
-export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange }: FolderCardProps) {
+export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange, isDraggable = false }: FolderCardProps) {
   const { id, title } = folder;
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: !isDraggable });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
-      <Card className={cn("transition-all hover:shadow-lg flex flex-col justify-between bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 p-2")}>
+      <Card 
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "transition-all hover:shadow-lg flex flex-col justify-between bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 p-2",
+          isDragging && "opacity-50 rotate-3 scale-105",
+          isDraggable && "cursor-grab active:cursor-grabbing"
+        )}
+        {...attributes}
+      >
         <div
           className="flex-grow cursor-pointer flex flex-col gap-1"
           onClick={() => onNavigate(id)}
@@ -30,6 +56,11 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
           <CardHeader className="flex flex-row items-start justify-between gap-4 p-0 space-y-0">
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
+                    {isDraggable && (
+                      <div {...listeners} className="flex items-center cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
+                        <GripVertical className="h-3 w-3 text-primary" />
+                      </div>
+                    )}
                     <FolderIcon className="h-4 w-4 text-primary shrink-0" />
                     <CardTitle className="font-headline text-xs font-semibold text-left leading-tight">
                         {title}

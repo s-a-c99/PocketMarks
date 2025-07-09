@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2, ExternalLink, Star } from "lucide-react";
+import { Pencil, Trash2, ExternalLink, Star, GripVertical } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { Bookmark } from "@/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { forwardRef } from "react";
 
 type BookmarkCardProps = {
   bookmark: Bookmark;
@@ -22,25 +25,56 @@ type BookmarkCardProps = {
   isSelected: boolean;
   onSelectionChange: (id: string, checked: boolean) => void;
   onTagClick?: (tag: string) => void;
+  isDraggable?: boolean;
 };
 
-export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange, onTagClick }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange, onTagClick, isDraggable = false }: BookmarkCardProps) {
   const { id, title, url, isFavorite, tags } = bookmark;
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: !isDraggable });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
-      <Card className="transition-all hover:shadow-md flex flex-col justify-between p-2 gap-1">
+      <Card 
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "transition-all hover:shadow-md flex flex-col justify-between p-2 gap-1",
+          isDragging && "opacity-50 rotate-3 scale-105",
+          isDraggable && "cursor-grab active:cursor-grabbing"
+        )}
+        {...attributes}
+      >
         <CardHeader className="flex flex-row items-start justify-between gap-2 p-0 space-y-0">
-          <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 min-w-0"
-          >
-              <CardTitle className="font-headline text-xs font-semibold hover:text-primary leading-tight">
-                {title}
-              </CardTitle>
-          </a>
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            {isDraggable && (
+              <div {...listeners} className="flex items-center cursor-grab active:cursor-grabbing mt-1">
+                <GripVertical className="h-3 w-3 text-muted-foreground" />
+              </div>
+            )}
+            <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-0"
+            >
+                <CardTitle className="font-headline text-xs font-semibold hover:text-primary leading-tight">
+                  {title}
+                </CardTitle>
+            </a>
+          </div>
           <div onClick={(e) => e.stopPropagation()} className="flex items-center h-4">
             <Checkbox
               id={`select-${id}`}
