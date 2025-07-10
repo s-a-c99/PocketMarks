@@ -14,21 +14,60 @@ The core principle of PocketMarks is **total user control**. You decide where yo
 
 Your bookmarks are always stored in a simple `bookmarks.json` file that you own, whether it's on your machine or your private cloud instance.
 
-## Features
+## Features & Capabilities
 
-- **Organize Your Links:** Create bookmarks and nested folders to keep your links organized.
-- **Modern Interface:** A clean and responsive UI with both Light and Dark modes.
-- **Mark Favorites:** Use the star icon to mark your most important bookmarks for quick access.
-- **Intelligent Merge:** When importing, PocketMarks detects which links are new, preventing duplicates and allowing you to merge collections cleanly.
-- **Robust Import/Export:** Import from any browser and export all or a selection of your bookmarks to a standard HTML file. This is perfect for backups, sharing, or creating curated context files for AI projects.
-- **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists and asks for confirmation.
-- **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
-- **Advanced Tag Management:** Comprehensive tag system with manual input, AI suggestions, click-to-filter, and bulk operations.
-- **Advanced Drag & Drop System:** Professional-grade drag and drop with multi-selection support, visual feedback, and undo/redo capabilities.
-- **Enhanced Search:** Global search across bookmark titles, URLs, and tags with real-time results and debounced input.
-- **Multi-Selection & Rectangle Selection:** Powerful selection system with checkbox-based and rectangle selection modes for bulk operations.
-- **Undo/Redo System:** Full history tracking with the ability to undo and redo drag operations for enhanced productivity.
-- **(Optional) AI-Powered Tag Suggestions:** By providing your own Google AI API key, you can enable an agent to automatically suggest up to 3 relevant tags for your bookmarks, making organization even faster.
+### **Core Functionality**
+- **Smart Organization:** Create bookmarks and nested folders with unlimited depth for perfect organization
+- **Modern Interface:** Clean, responsive UI with both Light and Dark modes that adapts to your preferences  
+- **Favorites System:** Star your most important bookmarks for instant access and priority display
+- **Duplicate Detection:** Automatic URL detection prevents duplicates with smart confirmation dialogs
+- **Statistics Dashboard:** Comprehensive insights with counts, domain distribution, and usage patterns
+
+### **🔄 Advanced Drag & Drop System**
+- **Multi-Item Dragging:** Select multiple bookmarks and folders, then drag them together in a single operation
+- **Professional Visual Feedback:** Count badges, rotation effects, scaling, shadows, and smooth animations
+- **Cross-Folder Movement:** Seamlessly move items between folders with clear drop zone indicators
+- **Parent Level Navigation:** Full-width drop zones with edge-to-edge detection for intuitive organization
+- **Auto-Save:** All changes automatically saved to bookmarks.json with server validation
+- **Custom Order Mode:** Precise manual organization with drag & drop in Custom Order sorting
+
+### **Multi-Selection & Rectangle Selection**
+- **Checkbox-Based Selection:** Precise selection using checkboxes in Custom Order mode for clean interaction
+- **Rectangle Selection:** Draw selection rectangles with mouse for rubber band multi-selection
+- **Real-Time Visual Feedback:** Items highlight instantly with color changes, scaling, and pulse animations
+- **Smooth Transitions:** Polished CSS transitions and animations for professional feel
+- **Hierarchical Selection:** Selecting folders automatically includes all contents with smart tracking
+- **Bulk Operations:** Open all selected bookmarks in tabs or delete multiple items with confirmations
+- **Selection Preview:** Visual preview of items being selected before finalizing
+- **Mixed Selection Modes:** Combine checkbox clicks with rectangle selection for maximum flexibility
+
+### **↩️ Undo/Redo System**
+- **Complete History Tracking:** Every drag operation saved to history for reliable rollback capability
+- **Visual Controls:** Dedicated undo/redo buttons with smart disabled states when unavailable
+- **State Management:** Maintains position in history stack for both undo and redo operations
+- **Drag Operation Focus:** Specifically tracks drag and drop changes for precise workflow control
+- **Automatic Saving:** History snapshots created automatically before significant state changes
+- **Error Recovery:** Fallback mechanism if drag operations fail or cause issues
+
+### **🏷️ Advanced Tag Management**
+- **Manual Tag Input:** Custom tags with dedicated input field and intelligent autocomplete
+- **AI-Powered Suggestions:** Get up to 3 relevant tags automatically suggested by AI (optional)
+- **Smart Memory:** Deleted tags remembered and won't be re-suggested for cleaner workflow
+- **Click-to-Filter:** Click any tag to instantly filter bookmarks showing only that tag
+- **Bulk Operations:** "Open All" button for tag-filtered results with confirmation for large sets
+
+### **🔍 Enhanced Search & Discovery**
+- **Global Search:** Search across bookmark titles, URLs, and tags simultaneously for comprehensive results
+- **Real-Time Results:** Debounced search with loading indicators for smooth, responsive performance
+- **Instant Filtering:** Results update as you type with optimized 300ms debounce timing
+- **Clear Visual Feedback:** Loading spinners and enhanced placeholders guide user interaction
+
+### **📊 Data Management & Import/Export**
+- **Intelligent Merge:** Smart import system detects new links, prevents duplicates, enables clean merging
+- **Robust Import/Export:** Universal browser compatibility with HTML export for backups and sharing
+- **Selective Export:** Export all bookmarks or just selected items for curated collections
+- **AI Context Creation:** Perfect for generating curated knowledge bases for AI projects
+- **(Optional) AI-Powered Features:** Provide your own Google AI API key to enable automatic tag suggestions
 
 ## Screenshots
 
@@ -55,48 +94,6 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 
 *Analytics dashboard in dark mode with visual charts and domain distribution*
 
-## Advanced Features
-
-### 🏷️ Advanced Tag Management
-- **Manual Tag Input:** Add custom tags with a dedicated input field and autocomplete
-- **AI-Powered Suggestions:** Get up to 3 relevant tags automatically suggested by AI
-- **Smart Memory:** Deleted tags are remembered and won't be re-suggested
-- **Click-to-Filter:** Click any tag to instantly filter bookmarks showing only that tag
-- **Bulk Operations:** "Open All" button for tag-filtered results with confirmation dialogs
-
-### 🔄 Advanced Drag & Drop System
-- **Multi-Item Dragging:** Select multiple bookmarks and folders, then drag them together in a single operation
-- **Visual Drag Feedback:** Professional-grade visual indicators showing what's being dragged with count badges
-- **Cross-Folder Movement:** Move bookmarks between different folders seamlessly with clear drop zone indicators
-- **Parent Level Navigation:** Full-width drop zones for moving items to parent folder level with edge-to-edge detection
-- **Smart Visual Feedback:** Drag cursors, rotation effects, scaling, and shadow animations during drag operations
-- **Auto-Save:** All changes are automatically saved to bookmarks.json with server validation
-- **Custom Order Mode:** Drag & drop enabled in Custom Order sorting mode for precise organization
-
-### 🔍 Enhanced Search
-- **Global Search:** Search across bookmark titles, URLs, and tags simultaneously
-- **Real-Time Results:** Debounced search with loading indicators for smooth performance
-- **Instant Filtering:** Results update as you type with 300ms debounce
-- **Clear Visual Feedback:** Loading spinner shows when search is processing
-- **Enhanced Placeholder:** Clear indication of what can be searched
-
-### 📦 Advanced Multi-Selection System
-- **Checkbox-Based Selection:** Precise selection using checkboxes in Custom Order mode for clean interaction
-- **Rectangle Selection:** Draw selection rectangles with mouse to select multiple items at once using rubber band selection
-- **Real-Time Visual Feedback:** Items highlight in real-time during rectangle selection with color changes, scaling, and pulse animations
-- **Smooth Transitions:** CSS transitions and animations provide polished visual feedback during selection changes
-- **Hierarchical Selection:** Selecting a folder automatically selects all its contents with descendant tracking
-- **Bulk Operations:** Open all selected bookmarks in new tabs or delete multiple items with confirmation dialogs
-- **Selection Preview:** Visual preview of items being selected before finalizing the selection
-- **Mixed Selection Modes:** Combine checkbox clicks with rectangle selection for maximum flexibility
-
-### ↩️ Undo/Redo System
-- **Complete History Tracking:** Every drag operation is saved to history for rollback capability
-- **Visual Undo/Redo Controls:** Dedicated buttons with disabled states when no actions are available
-- **State Management:** Maintains position in history stack for both undo and redo operations
-- **Drag Operation Focus:** Specifically tracks drag and drop changes for precise workflow control
-- **Automatic History Saving:** History snapshots are created automatically before significant state changes
-- **Error Recovery:** Provides fallback mechanism if drag operations fail or cause issues
 
 ## Getting Started
 
