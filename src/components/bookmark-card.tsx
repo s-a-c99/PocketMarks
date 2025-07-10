@@ -27,9 +27,10 @@ type BookmarkCardProps = {
   onTagClick?: (tag: string) => void;
   isDraggable?: boolean;
   isDropTarget?: boolean;
+  isPreviewSelected?: boolean;
 };
 
-export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange, onTagClick, isDraggable = false, isDropTarget = false }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isSelected, onSelectionChange, onTagClick, isDraggable = false, isDropTarget = false, isPreviewSelected = false }: BookmarkCardProps) {
   const { id, title, url, isFavorite, tags } = bookmark;
   
   const {
@@ -52,11 +53,13 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
         ref={setNodeRef}
         style={style}
         className={cn(
-          "transition-all hover:shadow-md flex flex-col justify-between p-2 gap-1",
+          "transition-all duration-200 hover:shadow-md flex flex-col justify-between p-2 gap-1",
           isDragging && "opacity-30 rotate-2 scale-95 z-0",
           isDraggable && "cursor-grab hover:scale-[1.02] hover:shadow-lg",
           isDraggable && isDragging && "cursor-grabbing",
-          isDropTarget && "ring-2 ring-primary ring-opacity-50 bg-primary/10 scale-105 shadow-lg"
+          isDropTarget && "ring-2 ring-primary ring-opacity-50 bg-primary/10 scale-105 shadow-lg",
+          isSelected && "ring-2 ring-primary bg-primary/5 scale-[1.02]",
+          isPreviewSelected && !isSelected && "ring-2 ring-primary/60 bg-primary/8 scale-[1.01] shadow-md animate-pulse"
         )}
         {...attributes}
       >
@@ -86,7 +89,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
             <Checkbox
               id={`select-${id}`}
               checked={isSelected}
-              onCheckedChange={(checked, event) => onSelectionChange(id, !!checked, event as React.MouseEvent)}
+              onCheckedChange={(checked) => onSelectionChange(id, !!checked)}
               aria-label={`Select ${title}`}
             />
           </div>

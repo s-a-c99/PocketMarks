@@ -24,9 +24,10 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 - **Duplicate Detection:** The app automatically detects when you're trying to add a URL that already exists and asks for confirmation.
 - **Statistics Dashboard:** Get insights into your collection with a dashboard showing total counts, your most frequently saved domains, and more.
 - **Advanced Tag Management:** Comprehensive tag system with manual input, AI suggestions, click-to-filter, and bulk operations.
-- **Drag & Drop Reordering:** Intuitive drag and drop functionality to reorder bookmarks and folders with automatic saving.
+- **Advanced Drag & Drop System:** Professional-grade drag and drop with multi-selection support, visual feedback, and undo/redo capabilities.
 - **Enhanced Search:** Global search across bookmark titles, URLs, and tags with real-time results and debounced input.
-- **Multi-Select Operations:** Select multiple bookmarks and folders for bulk operations like "Open All" or batch deletion.
+- **Multi-Selection & Rectangle Selection:** Powerful selection system with checkbox-based and rectangle selection modes for bulk operations.
+- **Undo/Redo System:** Full history tracking with the ability to undo and redo drag operations for enhanced productivity.
 - **(Optional) AI-Powered Tag Suggestions:** By providing your own Google AI API key, you can enable an agent to automatically suggest up to 3 relevant tags for your bookmarks, making organization even faster.
 
 ## Screenshots
@@ -63,12 +64,14 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 - **Click-to-Filter:** Click any tag to instantly filter bookmarks showing only that tag
 - **Bulk Operations:** "Open All" button for tag-filtered results with confirmation dialogs
 
-### 🔄 Drag & Drop Reordering
-- **Intuitive Reordering:** Drag and drop bookmarks and folders to reorder them
-- **Cross-Folder Movement:** Move bookmarks between different folders seamlessly
-- **Visual Feedback:** Drag indicators, hover effects, and smooth animations
-- **Auto-Save:** All changes are automatically saved to bookmarks.json
-- **Smart Constraints:** Drag & drop only enabled when sorting by "Date (Newest)" without active filters
+### 🔄 Advanced Drag & Drop System
+- **Multi-Item Dragging:** Select multiple bookmarks and folders, then drag them together in a single operation
+- **Visual Drag Feedback:** Professional-grade visual indicators showing what's being dragged with count badges
+- **Cross-Folder Movement:** Move bookmarks between different folders seamlessly with clear drop zone indicators
+- **Parent Level Navigation:** Full-width drop zones for moving items to parent folder level with edge-to-edge detection
+- **Smart Visual Feedback:** Drag cursors, rotation effects, scaling, and shadow animations during drag operations
+- **Auto-Save:** All changes are automatically saved to bookmarks.json with server validation
+- **Custom Order Mode:** Drag & drop enabled in Custom Order sorting mode for precise organization
 
 ### 🔍 Enhanced Search
 - **Global Search:** Search across bookmark titles, URLs, and tags simultaneously
@@ -77,12 +80,23 @@ Your bookmarks are always stored in a simple `bookmarks.json` file that you own,
 - **Clear Visual Feedback:** Loading spinner shows when search is processing
 - **Enhanced Placeholder:** Clear indication of what can be searched
 
-### 📦 Multi-Select Operations
-- **Bulk Selection:** Select multiple bookmarks and folders with checkboxes
-- **Open All:** Open all selected bookmarks in new tabs with confirmation for large sets
-- **Batch Operations:** Delete multiple items at once with confirmation dialogs
-- **Smart Counting:** Visual indicators show how many items are selected
-- **Hierarchical Selection:** Selecting a folder automatically selects all its contents
+### 📦 Advanced Multi-Selection System
+- **Checkbox-Based Selection:** Precise selection using checkboxes in Custom Order mode for clean interaction
+- **Rectangle Selection:** Draw selection rectangles with mouse to select multiple items at once using rubber band selection
+- **Real-Time Visual Feedback:** Items highlight in real-time during rectangle selection with color changes, scaling, and pulse animations
+- **Smooth Transitions:** CSS transitions and animations provide polished visual feedback during selection changes
+- **Hierarchical Selection:** Selecting a folder automatically selects all its contents with descendant tracking
+- **Bulk Operations:** Open all selected bookmarks in new tabs or delete multiple items with confirmation dialogs
+- **Selection Preview:** Visual preview of items being selected before finalizing the selection
+- **Mixed Selection Modes:** Combine checkbox clicks with rectangle selection for maximum flexibility
+
+### ↩️ Undo/Redo System
+- **Complete History Tracking:** Every drag operation is saved to history for rollback capability
+- **Visual Undo/Redo Controls:** Dedicated buttons with disabled states when no actions are available
+- **State Management:** Maintains position in history stack for both undo and redo operations
+- **Drag Operation Focus:** Specifically tracks drag and drop changes for precise workflow control
+- **Automatic History Saving:** History snapshots are created automatically before significant state changes
+- **Error Recovery:** Provides fallback mechanism if drag operations fail or cause issues
 
 ## Getting Started
 

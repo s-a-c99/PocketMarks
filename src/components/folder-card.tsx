@@ -19,9 +19,10 @@ type FolderCardProps = {
   onSelectionChange: (id: string, checked: boolean, event?: React.MouseEvent) => void;
   isDraggable?: boolean;
   isDropTarget?: boolean;
+  isPreviewSelected?: boolean;
 };
 
-export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange, isDraggable = false, isDropTarget = false }: FolderCardProps) {
+export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, onSelectionChange, isDraggable = false, isDropTarget = false, isPreviewSelected = false }: FolderCardProps) {
   const { id, title } = folder;
   
   const {
@@ -44,11 +45,13 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
         ref={setNodeRef}
         style={style}
         className={cn(
-          "transition-all hover:shadow-lg flex flex-col justify-between bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 p-2",
+          "transition-all duration-200 hover:shadow-lg flex flex-col justify-between bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 p-2",
           isDragging && "opacity-30 rotate-2 scale-95 z-0",
           isDraggable && "cursor-grab hover:scale-[1.02] hover:shadow-xl hover:bg-primary/25",
           isDraggable && isDragging && "cursor-grabbing",
-          isDropTarget && "ring-2 ring-primary ring-opacity-70 bg-primary/30 scale-105 shadow-xl border-primary/60"
+          isDropTarget && "ring-2 ring-primary ring-opacity-70 bg-primary/30 scale-105 shadow-xl border-primary/60",
+          isSelected && "ring-2 ring-primary bg-primary/20 scale-[1.02] border-primary/50",
+          isPreviewSelected && !isSelected && "ring-2 ring-primary/60 bg-primary/15 scale-[1.01] shadow-lg animate-pulse border-primary/40"
         )}
         {...attributes}
       >
@@ -81,7 +84,7 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
                         <Checkbox
                             id={`select-${id}`}
                             checked={isSelected}
-                            onCheckedChange={(checked, event) => onSelectionChange(id, !!checked, event as React.MouseEvent)}
+                            onCheckedChange={(checked) => onSelectionChange(id, !!checked)}
                             aria-label={`Select folder ${title}`}
                         />
                     </div>

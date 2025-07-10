@@ -273,6 +273,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
+  const [previewSelectedIds, setPreviewSelectedIds] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   
   const sensors = useSensors(
@@ -654,10 +655,45 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     if (!isSelecting || !selectionStart || !containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
-    setSelectionEnd({ 
+    const currentEnd = { 
       x: e.clientX - rect.left, 
       y: e.clientY - rect.top 
+    };
+    setSelectionEnd(currentEnd);
+
+    // Calculate preview selection rectangle in real-time
+    const selectionRect = {
+      left: Math.min(selectionStart.x, currentEnd.x),
+      top: Math.min(selectionStart.y, currentEnd.y),
+      right: Math.max(selectionStart.x, currentEnd.x),
+      bottom: Math.max(selectionStart.y, currentEnd.y),
+    };
+
+    // Find intersecting items for preview
+    const previewSelectedItemIds = new Set<string>();
+    const cards = containerRef.current.querySelectorAll('[data-item-id]');
+    
+    cards.forEach(card => {
+      const cardRect = card.getBoundingClientRect();
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      const relativeCardRect = {
+        left: cardRect.left - containerRect.left,
+        top: cardRect.top - containerRect.top,
+        right: cardRect.right - containerRect.left,
+        bottom: cardRect.bottom - containerRect.top,
+      };
+
+      // Check if rectangles intersect
+      if (!(relativeCardRect.right < selectionRect.left || 
+            relativeCardRect.left > selectionRect.right || 
+            relativeCardRect.bottom < selectionRect.top || 
+            relativeCardRect.top > selectionRect.bottom)) {
+        const itemId = card.getAttribute('data-item-id');
+        if (itemId) previewSelectedItemIds.add(itemId);
+      }
     });
+
+    setPreviewSelectedIds(previewSelectedItemIds);
   };
 
   const handleMouseUp = () => {
@@ -665,6 +701,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       setIsSelecting(false);
       setSelectionStart(null);
       setSelectionEnd(null);
+      setPreviewSelectedIds(new Set());
       return;
     }
 
@@ -704,6 +741,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setIsSelecting(false);
     setSelectionStart(null);
     setSelectionEnd(null);
+    setPreviewSelectedIds(new Set());
   };
 
   // Undo/Redo functionality
@@ -1281,6 +1319,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                                   onSelectionChange={handleSelectionChange}
                                   isDraggable={isDragAndDropEnabled}
                                   isDropTarget={overId === item.id && isDragging}
+                                  isPreviewSelected={previewSelectedIds.has(item.id)}
                               />
                           ) : (
                               <BookmarkCard
@@ -1293,6 +1332,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                                   onTagClick={handleTagClick}
                                   isDraggable={isDragAndDropEnabled}
                                   isDropTarget={overId === item.id && isDragging}
+                                  isPreviewSelected={previewSelectedIds.has(item.id)}
                               />
                           )}
                         </div>
