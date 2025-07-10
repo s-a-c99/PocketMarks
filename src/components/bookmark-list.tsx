@@ -534,39 +534,14 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setSelectedIds(prev => {
         const newSet = new Set(prev);
         
-        // Handle keyboard modifiers
-        if (event?.ctrlKey || event?.metaKey) {
-          // Ctrl/Cmd+click: toggle individual item
-          if (newSet.has(itemId)) {
-            idsToChange.forEach(id => newSet.delete(id));
-          } else {
-            idsToChange.forEach(id => newSet.add(id));
-          }
-        } else if (event?.shiftKey && newSet.size > 0) {
-          // Shift+click: select range
-          const currentItems = itemsToDisplay;
-          const lastSelectedIndex = currentItems.findIndex(item => newSet.has(item.id));
-          const currentIndex = currentItems.findIndex(item => item.id === itemId);
-          
-          if (lastSelectedIndex !== -1 && currentIndex !== -1) {
-            const start = Math.min(lastSelectedIndex, currentIndex);
-            const end = Math.max(lastSelectedIndex, currentIndex);
-            
-            for (let i = start; i <= end; i++) {
-              const item = currentItems[i];
-              if (item) {
-                const rangeIds = getDescendantIds(item);
-                rangeIds.forEach(id => newSet.add(id));
-              }
-            }
-          }
+        // For checkbox-based selection, always toggle the specific item
+        // The 'checked' parameter tells us the new state we want
+        if (checked) {
+          // Add this item and its descendants to selection
+          idsToChange.forEach(id => newSet.add(id));
         } else {
-          // Regular click: normal selection behavior
-          if (checked) {
-            idsToChange.forEach(id => newSet.add(id));
-          } else {
-            idsToChange.forEach(id => newSet.delete(id));
-          }
+          // Remove this item and its descendants from selection
+          idsToChange.forEach(id => newSet.delete(id));
         }
         
         return newSet;
