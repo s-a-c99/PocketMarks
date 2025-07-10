@@ -636,7 +636,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     // Only proceed with primary button (left click) and when drag & drop is enabled
     if (e.button !== 0 || !isDragAndDropEnabled) return;
     
-    // Don't start rectangle selection if clicking on interactive elements
+    // Don't start rectangle selection if clicking directly on interactive elements
     const target = e.target as HTMLElement;
     if (target.closest('[role="checkbox"]') || 
         target.closest('[data-radix-collection-item]') ||
@@ -655,8 +655,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       return;
     }
     
-    // Only start on empty space, not on cards
-    if (target.closest('[data-item-id]')) {
+    // Don't start if clicking directly on a card component (not just the container)
+    if (target.closest('.card') || target.closest('[data-testid]') || target.tagName === 'BUTTON' || target.tagName === 'A') {
       return;
     }
     
