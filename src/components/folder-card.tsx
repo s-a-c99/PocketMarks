@@ -16,7 +16,7 @@ type FolderCardProps = {
   onDelete: (id: string) => void;
   onNavigate: (id: string) => void;
   isSelected: boolean;
-  onSelectionChange: (id: string, checked: boolean) => void;
+  onSelectionChange: (id: string, checked: boolean, event?: React.MouseEvent) => void;
   isDraggable?: boolean;
   isDropTarget?: boolean;
 };
@@ -81,7 +81,7 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
                         <Checkbox
                             id={`select-${id}`}
                             checked={isSelected}
-                            onCheckedChange={(checked) => onSelectionChange(id, !!checked)}
+                            onCheckedChange={(checked, event) => onSelectionChange(id, !!checked, event as React.MouseEvent)}
                             aria-label={`Select folder ${title}`}
                         />
                     </div>

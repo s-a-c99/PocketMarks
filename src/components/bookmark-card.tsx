@@ -23,7 +23,7 @@ type BookmarkCardProps = {
   onDelete: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   isSelected: boolean;
-  onSelectionChange: (id: string, checked: boolean) => void;
+  onSelectionChange: (id: string, checked: boolean, event?: React.MouseEvent) => void;
   onTagClick?: (tag: string) => void;
   isDraggable?: boolean;
   isDropTarget?: boolean;
@@ -86,7 +86,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
             <Checkbox
               id={`select-${id}`}
               checked={isSelected}
-              onCheckedChange={(checked) => onSelectionChange(id, !!checked)}
+              onCheckedChange={(checked, event) => onSelectionChange(id, !!checked, event as React.MouseEvent)}
               aria-label={`Select ${title}`}
             />
           </div>

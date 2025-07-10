@@ -94,13 +94,15 @@ const findPath = (items: BookmarkItem[], id: string): Folder[] => {
 
 function sortItems(items: BookmarkItem[], sortBy: string): BookmarkItem[] {
   const sorted = [...items].sort((a, b) => {
-    // Favorites always on top
-    if (a.type === 'bookmark' && a.isFavorite && (b.type !== 'bookmark' || !b.isFavorite)) return -1;
-    if (b.type === 'bookmark' && b.isFavorite && (a.type !== 'bookmark' || !a.isFavorite)) return 1;
+    // Favorites always on top (except in custom order mode)
+    if (sortBy !== 'custom') {
+      if (a.type === 'bookmark' && a.isFavorite && (b.type !== 'bookmark' || !b.isFavorite)) return -1;
+      if (b.type === 'bookmark' && b.isFavorite && (a.type !== 'bookmark' || !a.isFavorite)) return 1;
 
-    // Folders before bookmarks (if not favorite)
-    if (a.type === 'folder' && b.type !== 'folder') return -1;
-    if (a.type !== 'folder' && b.type === 'folder') return 1;
+      // Folders before bookmarks (if not favorite and not custom order)
+      if (a.type === 'folder' && b.type !== 'folder') return -1;
+      if (a.type !== 'folder' && b.type === 'folder') return 1;
+    }
 
     switch (sortBy) {
       case 'custom':
@@ -196,7 +198,7 @@ function ParentDropZone({ isOver }: { isOver: boolean }) {
     <div 
       ref={setNodeRef}
       className={cn(
-        "mb-4 p-4 border-2 border-dashed rounded-lg transition-all",
+        "mb-4 p-6 border-2 border-dashed rounded-lg transition-all w-full",
         isOver 
           ? "border-primary bg-primary/10 scale-105" 
           : "border-muted-foreground/30 bg-muted/20"
@@ -206,6 +208,28 @@ function ParentDropZone({ isOver }: { isOver: boolean }) {
         <div className="font-medium">↑ Move to Parent Level</div>
         <div className="text-xs">Drop here to move out of this folder</div>
       </div>
+    </div>
+  );
+}
+
+function EdgeDropZone({ isOver }: { isOver: boolean }) {
+  const { setNodeRef } = useDroppable({
+    id: 'move-to-parent',
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={cn(
+        "absolute top-0 left-0 right-0 h-16 z-40 transition-all",
+        isOver ? "bg-primary/20 border-b-2 border-primary" : "bg-transparent"
+      )}
+    >
+      {isOver && (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-xs text-primary font-medium">↑ Drop to move to parent level</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -241,6 +265,15 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   // Undo/Redo system
   const [history, setHistory] = useState<BookmarkItem[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  
+  // Multi-selection drag state
+  const [draggedItems, setDraggedItems] = useState<BookmarkItem[]>([]);
+  
+  // Rectangle selection state
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -491,7 +524,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     return ids;
   };
   
-  const handleSelectionChange = (itemId: string, checked: boolean) => {
+  const handleSelectionChange = (itemId: string, checked: boolean, event?: React.MouseEvent) => {
     const item = findItem(items, itemId);
     if (!item) return;
 
@@ -499,11 +532,42 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     
     setSelectedIds(prev => {
         const newSet = new Set(prev);
-        if (checked) {
-            idsToChange.forEach(id => newSet.add(id));
-        } else {
+        
+        // Handle keyboard modifiers
+        if (event?.ctrlKey || event?.metaKey) {
+          // Ctrl/Cmd+click: toggle individual item
+          if (newSet.has(itemId)) {
             idsToChange.forEach(id => newSet.delete(id));
+          } else {
+            idsToChange.forEach(id => newSet.add(id));
+          }
+        } else if (event?.shiftKey && newSet.size > 0) {
+          // Shift+click: select range
+          const currentItems = itemsToDisplay;
+          const lastSelectedIndex = currentItems.findIndex(item => newSet.has(item.id));
+          const currentIndex = currentItems.findIndex(item => item.id === itemId);
+          
+          if (lastSelectedIndex !== -1 && currentIndex !== -1) {
+            const start = Math.min(lastSelectedIndex, currentIndex);
+            const end = Math.max(lastSelectedIndex, currentIndex);
+            
+            for (let i = start; i <= end; i++) {
+              const item = currentItems[i];
+              if (item) {
+                const rangeIds = getDescendantIds(item);
+                rangeIds.forEach(id => newSet.add(id));
+              }
+            }
+          }
+        } else {
+          // Regular click: normal selection behavior
+          if (checked) {
+            idsToChange.forEach(id => newSet.add(id));
+          } else {
+            idsToChange.forEach(id => newSet.delete(id));
+          }
         }
+        
         return newSet;
     });
   };
@@ -565,6 +629,83 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setSelectedTag(null);
   };
 
+  // Rectangle selection handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0 || !isDragAndDropEnabled) return; // Only left click and in drag mode
+    
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    setIsSelecting(true);
+    setSelectionStart({ 
+      x: e.clientX - rect.left, 
+      y: e.clientY - rect.top 
+    });
+    setSelectionEnd({ 
+      x: e.clientX - rect.left, 
+      y: e.clientY - rect.top 
+    });
+    
+    // Prevent text selection
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isSelecting || !selectionStart || !containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    setSelectionEnd({ 
+      x: e.clientX - rect.left, 
+      y: e.clientY - rect.top 
+    });
+  };
+
+  const handleMouseUp = () => {
+    if (!isSelecting || !selectionStart || !selectionEnd || !containerRef.current) {
+      setIsSelecting(false);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      return;
+    }
+
+    // Calculate selection rectangle
+    const selectionRect = {
+      left: Math.min(selectionStart.x, selectionEnd.x),
+      top: Math.min(selectionStart.y, selectionEnd.y),
+      right: Math.max(selectionStart.x, selectionEnd.x),
+      bottom: Math.max(selectionStart.y, selectionEnd.y),
+    };
+
+    // Find intersecting items
+    const selectedItemIds = new Set<string>();
+    const cards = containerRef.current.querySelectorAll('[data-item-id]');
+    
+    cards.forEach(card => {
+      const cardRect = card.getBoundingClientRect();
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      const relativeCardRect = {
+        left: cardRect.left - containerRect.left,
+        top: cardRect.top - containerRect.top,
+        right: cardRect.right - containerRect.left,
+        bottom: cardRect.bottom - containerRect.top,
+      };
+
+      // Check if rectangles intersect
+      if (!(relativeCardRect.right < selectionRect.left || 
+            relativeCardRect.left > selectionRect.right || 
+            relativeCardRect.bottom < selectionRect.top || 
+            relativeCardRect.top > selectionRect.bottom)) {
+        const itemId = card.getAttribute('data-item-id');
+        if (itemId) selectedItemIds.add(itemId);
+      }
+    });
+
+    setSelectedIds(selectedItemIds);
+    setIsSelecting(false);
+    setSelectionStart(null);
+    setSelectionEnd(null);
+  };
+
   // Undo/Redo functionality
   const saveToHistory = (newItems: BookmarkItem[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -602,8 +743,20 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const draggedId = event.active.id as string;
+    setActiveId(draggedId);
     setIsDragging(true);
+    
+    // Collect all items that should be dragged together
+    const selectedItemsIncludingDragged = new Set(selectedIds);
+    selectedItemsIncludingDragged.add(draggedId);
+    
+    const itemsToDrag = Array.from(selectedItemsIncludingDragged)
+      .map(id => findItem(items, id))
+      .filter(Boolean) as BookmarkItem[];
+    
+    setDraggedItems(itemsToDrag);
+    console.log('Starting drag with items:', itemsToDrag.map(item => item.title));
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -614,6 +767,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setActiveId(null);
     setIsDragging(false);
     setOverId(null);
+    setDraggedItems([]);
     
     const { active, over } = event;
     
@@ -624,6 +778,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     const activeItem = findItem(items, active.id as string);
     
     if (!activeItem) return;
+    
+    // Use draggedItems for batch operations, fallback to single item
+    const itemsToMove = draggedItems.length > 0 ? draggedItems : [activeItem];
+    console.log('Moving items:', itemsToMove.map(item => item.title));
 
     // Check if moving to parent level
     if (over.id === 'move-to-parent' && currentFolderId) {
@@ -632,44 +790,45 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
         const parentFolder = currentPath.length > 1 ? currentPath[currentPath.length - 2] : null;
         const targetParentId = parentFolder ? parentFolder.id : null; // null means root level
         
-        console.log('Moving to parent level:', { activeItem: activeItem.id, targetParentId, currentPath });
+        console.log('Moving to parent level:', { items: itemsToMove.map(i => i.id), targetParentId, currentPath });
         
         // Store original state for potential rollback and save to history
         const originalItems = items;
         saveToHistory(originalItems);
         
-        // Move item to parent level
+        // Move items to parent level
         setItems(current => {
           try {
-            const removeItemRecursively = (items: BookmarkItem[], itemId: string): BookmarkItem[] => {
+            const removeItemsRecursively = (items: BookmarkItem[], itemIds: string[]): BookmarkItem[] => {
               return items
-                .filter(item => item.id !== itemId)
+                .filter(item => !itemIds.includes(item.id))
                 .map(item => {
                   if (item.type === 'folder') {
-                    return { ...item, children: removeItemRecursively(item.children, itemId) };
+                    return { ...item, children: removeItemsRecursively(item.children, itemIds) };
                   }
                   return item;
                 });
             };
 
-            const addItemToLevel = (items: BookmarkItem[], parentId: string | null, newItem: BookmarkItem): BookmarkItem[] => {
+            const addItemsToLevel = (items: BookmarkItem[], parentId: string | null, newItems: BookmarkItem[]): BookmarkItem[] => {
               if (!parentId) {
                 // Add to root level
-                return [...items, newItem];
+                return [...items, ...newItems];
               }
               return items.map(item => {
                 if (item.type === 'folder' && item.id === parentId) {
-                  return { ...item, children: [...item.children, newItem] };
+                  return { ...item, children: [...item.children, ...newItems] };
                 }
                 if (item.type === 'folder') {
-                  return { ...item, children: addItemToLevel(item.children, parentId, newItem) };
+                  return { ...item, children: addItemsToLevel(item.children, parentId, newItems) };
                 }
                 return item;
               });
             };
 
-            let updatedItems = removeItemRecursively(current, activeItem.id);
-            updatedItems = addItemToLevel(updatedItems, targetParentId, activeItem);
+            const itemIds = itemsToMove.map(item => item.id);
+            let updatedItems = removeItemsRecursively(current, itemIds);
+            updatedItems = addItemsToLevel(updatedItems, targetParentId, itemsToMove);
             return updatedItems;
           } catch (error) {
             console.error('Error in state update for move to parent:', error);
@@ -677,23 +836,26 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
           }
         });
 
-        // Save to server
+        // Save to server - batch operations
         startTransition(() => {
-          saveItemAction(activeItem, targetParentId).then(() => {
-            toast({
-              title: "Moved to parent level",
-              description: `${activeItem.title} has been moved ${targetParentId ? 'to parent folder' : 'to root level'}.`,
+          Promise.all(itemsToMove.map(item => saveItemAction(item, targetParentId)))
+            .then(() => {
+              toast({
+                title: "Moved to parent level",
+                description: `${itemsToMove.length} item${itemsToMove.length > 1 ? 's' : ''} moved ${targetParentId ? 'to parent folder' : 'to root level'}.`,
+              });
+              // Clear selection after successful move
+              setSelectedIds(new Set());
+            }).catch((error) => {
+              console.error('Error saving move to parent:', error);
+              toast({
+                variant: "destructive",
+                title: "Move Failed",
+                description: "Could not move items to parent level.",
+              });
+              // Revert to original state on error
+              setItems(originalItems);
             });
-          }).catch((error) => {
-            console.error('Error saving move to parent:', error);
-            toast({
-              variant: "destructive",
-              title: "Move Failed",
-              description: "Could not move item to parent level.",
-            });
-            // Revert to original state on error
-            setItems(originalItems);
-          });
         });
         return;
       } catch (error) {
@@ -713,40 +875,41 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     // Check if dropping into a folder
     if (overItem.type === 'folder') {
       try {
-        console.log('Moving to folder:', { activeItem: activeItem.id, targetFolder: overItem.id });
+        console.log('Moving to folder:', { items: itemsToMove.map(i => i.id), targetFolder: overItem.id });
         
         // Store original state for potential rollback and save to history
         const originalItems = items;
         saveToHistory(originalItems);
         
-        // Move item into the folder
+        // Move items into the folder
         setItems(current => {
           try {
-            const removeItemRecursively = (items: BookmarkItem[], itemId: string): BookmarkItem[] => {
+            const removeItemsRecursively = (items: BookmarkItem[], itemIds: string[]): BookmarkItem[] => {
               return items
-                .filter(item => item.id !== itemId)
+                .filter(item => !itemIds.includes(item.id))
                 .map(item => {
                   if (item.type === 'folder') {
-                    return { ...item, children: removeItemRecursively(item.children, itemId) };
+                    return { ...item, children: removeItemsRecursively(item.children, itemIds) };
                   }
                   return item;
                 });
             };
 
-            const addItemToFolder = (items: BookmarkItem[], folderId: string, newItem: BookmarkItem): BookmarkItem[] => {
+            const addItemsToFolder = (items: BookmarkItem[], folderId: string, newItems: BookmarkItem[]): BookmarkItem[] => {
               return items.map(item => {
                 if (item.type === 'folder' && item.id === folderId) {
-                  return { ...item, children: [...item.children, newItem] };
+                  return { ...item, children: [...item.children, ...newItems] };
                 }
                 if (item.type === 'folder') {
-                  return { ...item, children: addItemToFolder(item.children, folderId, newItem) };
+                  return { ...item, children: addItemsToFolder(item.children, folderId, newItems) };
                 }
                 return item;
               });
             };
 
-            let updatedItems = removeItemRecursively(current, activeItem.id);
-            updatedItems = addItemToFolder(updatedItems, overItem.id, activeItem);
+            const itemIds = itemsToMove.map(item => item.id);
+            let updatedItems = removeItemsRecursively(current, itemIds);
+            updatedItems = addItemsToFolder(updatedItems, overItem.id, itemsToMove);
             return updatedItems;
           } catch (error) {
             console.error('Error in state update for move to folder:', error);
@@ -754,23 +917,26 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
           }
         });
 
-        // Save to server - move to folder
+        // Save to server - batch move to folder
         startTransition(() => {
-          saveItemAction(activeItem, overItem.id).then(() => {
-            toast({
-              title: "Moved to folder",
-              description: `${activeItem.title} has been moved to "${overItem.title}".`,
+          Promise.all(itemsToMove.map(item => saveItemAction(item, overItem.id)))
+            .then(() => {
+              toast({
+                title: "Moved to folder",
+                description: `${itemsToMove.length} item${itemsToMove.length > 1 ? 's' : ''} moved to "${overItem.title}".`,
+              });
+              // Clear selection after successful move
+              setSelectedIds(new Set());
+            }).catch((error) => {
+              console.error('Error saving move to folder:', error);
+              toast({
+                variant: "destructive",
+                title: "Move Failed",
+                description: "Could not move items to folder.",
+              });
+              // Revert to original state on error
+              setItems(originalItems);
             });
-          }).catch((error) => {
-            console.error('Error saving move to folder:', error);
-            toast({
-              variant: "destructive",
-              title: "Move Failed",
-              description: "Could not move item to folder.",
-            });
-            // Revert to original state on error
-            setItems(originalItems);
-          });
         });
       } catch (error) {
         console.error('Error in move to folder:', error);
@@ -1086,66 +1252,103 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 strategy={rectSortingStrategy}
                 disabled={!isDragAndDropEnabled}
               >
+                {/* Edge Drop Zone - covers top 20% when in folder and dragging */}
+                {currentFolderId && isDragging && (
+                  <EdgeDropZone isOver={overId === 'move-to-parent'} />
+                )}
+                
                 {/* Move to Parent Drop Zone - only show when in a folder and dragging */}
                 {currentFolderId && isDragging && (
                   <ParentDropZone isOver={overId === 'move-to-parent'} />
                 )}
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3">
-                    {itemsToDisplay.map(item =>
-                        item.type === 'folder' ? (
-                            <FolderCard
-                                key={item.id}
-                                folder={item}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                                onNavigate={setCurrentFolderId}
-                                isSelected={selectedIds.has(item.id)}
-                                onSelectionChange={handleSelectionChange}
-                                isDraggable={isDragAndDropEnabled}
-                                isDropTarget={overId === item.id && isDragging}
-                            />
-                        ) : (
-                            <BookmarkCard
-                                key={item.id}
-                                bookmark={item}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                                onToggleFavorite={handleToggleFavorite}
-                                isSelected={selectedIds.has(item.id)}
-                                onSelectionChange={handleSelectionChange}
-                                onTagClick={handleTagClick}
-                                isDraggable={isDragAndDropEnabled}
-                                isDropTarget={overId === item.id && isDragging}
-                            />
-                        )
+                <div 
+                  ref={containerRef}
+                  className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3"
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                >
+                    {itemsToDisplay.map(item => (
+                        <div key={item.id} data-item-id={item.id}>
+                          {item.type === 'folder' ? (
+                              <FolderCard
+                                  folder={item}
+                                  onEdit={handleEdit}
+                                  onDelete={handleDelete}
+                                  onNavigate={setCurrentFolderId}
+                                  isSelected={selectedIds.has(item.id)}
+                                  onSelectionChange={handleSelectionChange}
+                                  isDraggable={isDragAndDropEnabled}
+                                  isDropTarget={overId === item.id && isDragging}
+                              />
+                          ) : (
+                              <BookmarkCard
+                                  bookmark={item}
+                                  onEdit={handleEdit}
+                                  onDelete={handleDelete}
+                                  onToggleFavorite={handleToggleFavorite}
+                                  isSelected={selectedIds.has(item.id)}
+                                  onSelectionChange={handleSelectionChange}
+                                  onTagClick={handleTagClick}
+                                  isDraggable={isDragAndDropEnabled}
+                                  isDropTarget={overId === item.id && isDragging}
+                              />
+                          )}
+                        </div>
+                    ))}
+                    
+                    {/* Selection Rectangle Overlay */}
+                    {isSelecting && selectionStart && selectionEnd && (
+                      <div
+                        className="absolute border-2 border-primary bg-primary/10 pointer-events-none z-50"
+                        style={{
+                          left: Math.min(selectionStart.x, selectionEnd.x),
+                          top: Math.min(selectionStart.y, selectionEnd.y),
+                          width: Math.abs(selectionEnd.x - selectionStart.x),
+                          height: Math.abs(selectionEnd.y - selectionStart.y),
+                        }}
+                      />
                     )}
                 </div>
               </SortableContext>
               
               <DragOverlay>
                 {activeItem && (
-                  <div className="rotate-6 scale-110 opacity-90 shadow-2xl ring-2 ring-primary/50 transform transition-transform duration-200 cursor-grabbing">
-                    {activeItem.type === 'folder' ? (
-                      <FolderCard
-                        folder={activeItem}
-                        onEdit={() => {}}
-                        onDelete={() => {}}
-                        onNavigate={() => {}}
-                        isSelected={false}
-                        onSelectionChange={() => {}}
-                        isDraggable={false}
-                      />
-                    ) : (
-                      <BookmarkCard
-                        bookmark={activeItem}
-                        onEdit={() => {}}
-                        onDelete={() => {}}
-                        onToggleFavorite={() => {}}
-                        isSelected={false}
-                        onSelectionChange={() => {}}
-                        isDraggable={false}
-                      />
+                  <div className="relative">
+                    <div className="rotate-6 scale-110 opacity-90 shadow-2xl ring-2 ring-primary/50 transform transition-transform duration-200 cursor-grabbing">
+                      {activeItem.type === 'folder' ? (
+                        <FolderCard
+                          folder={activeItem}
+                          onEdit={() => {}}
+                          onDelete={() => {}}
+                          onNavigate={() => {}}
+                          isSelected={false}
+                          onSelectionChange={() => {}}
+                          isDraggable={false}
+                        />
+                      ) : (
+                        <BookmarkCard
+                          bookmark={activeItem}
+                          onEdit={() => {}}
+                          onDelete={() => {}}
+                          onToggleFavorite={() => {}}
+                          isSelected={false}
+                          onSelectionChange={() => {}}
+                          isDraggable={false}
+                        />
+                      )}
+                    </div>
+                    {/* Group drag indicator */}
+                    {draggedItems.length > 1 && (
+                      <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg z-10">
+                        {draggedItems.length}
+                      </div>
+                    )}
+                    {draggedItems.length > 1 && (
+                      <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                        Moving {draggedItems.length} items
+                      </div>
                     )}
                   </div>
                 )}
