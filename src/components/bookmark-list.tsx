@@ -274,6 +274,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
   const [previewSelectedIds, setPreviewSelectedIds] = useState<Set<string>>(new Set());
+  const [dropIntention, setDropIntention] = useState<'folder' | 'reorder' | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const sensors = useSensors(
@@ -303,6 +304,21 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Handle escape key to cancel rectangle selection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isSelecting) {
+        setIsSelecting(false);
+        setSelectionStart(null);
+        setSelectionEnd(null);
+        setPreviewSelectedIds(new Set());
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isSelecting]);
   
   const sortedItems = useMemo(() => sortItems(items, sortBy), [items, sortBy]);
   
@@ -617,15 +633,30 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   // Rectangle selection handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0 || !isDragAndDropEnabled) return; // Only left click and in drag mode
+    // Only proceed with primary button (left click) and when drag & drop is enabled
+    if (e.button !== 0 || !isDragAndDropEnabled) return;
     
-    // Don't start rectangle selection if clicking on a checkbox or its container
+    // Don't start rectangle selection if clicking on interactive elements
     const target = e.target as HTMLElement;
     if (target.closest('[role="checkbox"]') || 
         target.closest('[data-radix-collection-item]') ||
         target.closest('button') ||
         target.closest('a') ||
-        target.closest('.checkbox-container')) {
+        target.closest('.checkbox-container') ||
+        target.closest('[draggable="true"]') ||
+        target.closest('[data-sortable="true"]') ||
+        target.hasAttribute('draggable') ||
+        target.closest('.sortable-item')) {
+      return;
+    }
+    
+    // Don't start if we're already dragging or selecting
+    if (isDragging || isSelecting || activeId) {
+      return;
+    }
+    
+    // Only start on empty space, not on cards
+    if (target.closest('[data-item-id]')) {
       return;
     }
     
@@ -794,31 +825,35 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   const handleDragOver = (event: DragOverEvent) => {
     const overId = event.over?.id as string || null;
+    setOverId(overId);
     
-    // If hovering over a folder, check if we're near the edges for reordering
+    // If hovering over a folder, determine the intention based on mouse position
     if (overId && event.over) {
       const overItem = findItem(items, overId);
       
       if (overItem?.type === 'folder') {
-        // Get the position of the mouse relative to the folder element
         const rect = event.over.rect;
-        const mouseY = event.delta.y;
+        const mouseY = event.activatorEvent?.clientY || 0;
+        const rectTop = rect.top;
+        const rectBottom = rect.bottom;
         
-        // Only allow reordering if we're very close to the top or bottom edge (10% of height)
-        const edgeThreshold = rect.height * 0.1;
-        const isNearTopEdge = mouseY < rect.top + edgeThreshold;
-        const isNearBottomEdge = mouseY > rect.bottom - edgeThreshold;
+        // Define edge zones: top and bottom 20% of the folder height
+        const edgeThreshold = rect.height * 0.2;
+        const isNearTopEdge = mouseY < rectTop + edgeThreshold;
+        const isNearBottomEdge = mouseY > rectBottom - edgeThreshold;
         
-        // If we're in the middle of the folder (not near edges), don't trigger reordering
-        if (!isNearTopEdge && !isNearBottomEdge) {
-          // Still set overId for drop detection, but prevent reordering visuals
-          setOverId(overId);
-          return;
+        // Set intention based on position
+        if (isNearTopEdge || isNearBottomEdge) {
+          setDropIntention('reorder');
+        } else {
+          setDropIntention('folder');
         }
+      } else {
+        setDropIntention('reorder');
       }
+    } else {
+      setDropIntention(null);
     }
-    
-    setOverId(overId);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -826,6 +861,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setIsDragging(false);
     setOverId(null);
     setDraggedItems([]);
+    const currentDropIntention = dropIntention;
+    setDropIntention(null);
     
     const { active, over } = event;
     
@@ -930,8 +967,8 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     const overItem = findItem(items, over.id as string);
     if (!overItem) return;
 
-    // Check if dropping into a folder
-    if (overItem.type === 'folder') {
+    // Check if dropping into a folder based on intention
+    if (overItem.type === 'folder' && currentDropIntention === 'folder') {
       try {
         console.log('Moving to folder:', { items: itemsToMove.map(i => i.id), targetFolder: overItem.id });
         
