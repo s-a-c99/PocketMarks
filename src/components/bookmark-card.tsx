@@ -85,7 +85,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
                 </CardTitle>
             </a>
           </div>
-          <div onClick={(e) => e.stopPropagation()} className="flex items-center h-4">
+          <div onClick={(e) => e.stopPropagation()} className="flex items-center h-4 checkbox-container">
             <Checkbox
               id={`select-${id}`}
               checked={isSelected}

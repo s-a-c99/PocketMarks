@@ -80,7 +80,7 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
             </div>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <div onClick={(e) => e.stopPropagation()} className="flex items-center h-4">
+                    <div onClick={(e) => e.stopPropagation()} className="flex items-center h-4 checkbox-container">
                         <Checkbox
                             id={`select-${id}`}
                             checked={isSelected}

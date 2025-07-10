@@ -346,6 +346,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const confirmDelete = () => {
     if (!itemToDelete) return;
 
+    // Save current state to history before deletion
+    saveToHistory(items);
+    
     const originalItems = items;
     setItems(currentItems => deleteItemsRecursive(currentItems, new Set([itemToDelete!])));
     setItemToDelete(null);
@@ -373,6 +376,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const handleConfirmMultiDelete = () => {
     const idsToDelete = Array.from(selectedIds);
     if (idsToDelete.length === 0) return;
+    
+    // Save current state to history before multi-deletion
+    saveToHistory(items);
   
     const originalItems = items;
     setItems(currentItems => deleteItemsRecursive(currentItems, new Set(idsToDelete)));
@@ -396,6 +402,10 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   const handleSaveItem = (values: Omit<BookmarkItem, 'id' | 'children' | 'createdAt'>) => {
     const isEditing = !!itemToEdit && !!itemToEdit.id;
+    
+    // Save current state to history before saving/editing
+    saveToHistory(items);
+    
     const itemToSave: BookmarkItem = {
       id: isEditing ? itemToEdit.id : uuidv4(),
       ...values,
@@ -609,6 +619,16 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0 || !isDragAndDropEnabled) return; // Only left click and in drag mode
     
+    // Don't start rectangle selection if clicking on a checkbox or its container
+    const target = e.target as HTMLElement;
+    if (target.closest('[role="checkbox"]') || 
+        target.closest('[data-radix-collection-item]') ||
+        target.closest('button') ||
+        target.closest('a') ||
+        target.closest('.checkbox-container')) {
+      return;
+    }
+    
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
     
@@ -773,7 +793,32 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    setOverId(event.over?.id as string || null);
+    const overId = event.over?.id as string || null;
+    
+    // If hovering over a folder, check if we're near the edges for reordering
+    if (overId && event.over) {
+      const overItem = findItem(items, overId);
+      
+      if (overItem?.type === 'folder') {
+        // Get the position of the mouse relative to the folder element
+        const rect = event.over.rect;
+        const mouseY = event.delta.y;
+        
+        // Only allow reordering if we're very close to the top or bottom edge (10% of height)
+        const edgeThreshold = rect.height * 0.1;
+        const isNearTopEdge = mouseY < rect.top + edgeThreshold;
+        const isNearBottomEdge = mouseY > rect.bottom - edgeThreshold;
+        
+        // If we're in the middle of the folder (not near edges), don't trigger reordering
+        if (!isNearTopEdge && !isNearBottomEdge) {
+          // Still set overId for drop detection, but prevent reordering visuals
+          setOverId(overId);
+          return;
+        }
+      }
+    }
+    
+    setOverId(overId);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -1109,34 +1154,33 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
               </SelectContent>
             </Select>
             {isDragAndDropEnabled && (
-              <>
-                <span className="text-xs text-muted-foreground hidden sm:block">
-                  Drag & drop enabled
-                </span>
-                <div className="flex gap-1">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleUndo}
-                    disabled={historyIndex <= 0}
-                    className="h-8 w-8 p-0"
-                    title="Undo last drag operation"
-                  >
-                    <Undo2 className="h-3 w-3" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleRedo}
-                    disabled={historyIndex >= history.length - 1}
-                    className="h-8 w-8 p-0"
-                    title="Redo last undone operation"
-                  >
-                    <Redo2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </>
+              <span className="text-xs text-muted-foreground hidden sm:block">
+                Drag & drop enabled
+              </span>
             )}
+            
+            <div className="flex gap-1">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleUndo}
+                disabled={historyIndex <= 0}
+                className="h-8 w-8 p-0"
+                title="Undo last operation"
+              >
+                <Undo2 className="h-3 w-3" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRedo}
+                disabled={historyIndex >= history.length - 1}
+                className="h-8 w-8 p-0"
+                title="Redo last undone operation"
+              >
+                <Redo2 className="h-3 w-3" />
+              </Button>
+            </div>
 
             <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending}>
                 <Plus className="mr-2 h-4 w-4" /> Add Bookmark
