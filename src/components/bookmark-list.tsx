@@ -655,8 +655,9 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
       return;
     }
     
-    // Don't start if clicking directly on a card component (not just the container)
-    if (target.closest('.card') || target.closest('[data-testid]') || target.tagName === 'BUTTON' || target.tagName === 'A') {
+    // Only start rectangle selection on the grid container itself (empty spaces)
+    // This allows drag operations on cards while enabling rectangle selection in gaps
+    if (target !== containerRef.current) {
       return;
     }
     
