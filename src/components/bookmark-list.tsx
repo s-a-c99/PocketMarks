@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef, useEffect } from "react";
-import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2, Import, Download, X, ExternalLink } from "lucide-react";
+import { Plus, FolderPlus, Loader2, ChevronDown, Search, Ban, Trash2, Import, Download, X, ExternalLink, Undo2, Redo2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import type { BookmarkItem, Folder, Bookmark } from "@/types";
 import { BookmarkCard } from "./bookmark-card";
@@ -14,6 +14,7 @@ import { BreadcrumbNav } from "./breadcrumb-nav";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import {
   deleteItemAction,
   saveItemAction,
@@ -102,6 +103,8 @@ function sortItems(items: BookmarkItem[], sortBy: string): BookmarkItem[] {
     if (a.type !== 'folder' && b.type === 'folder') return 1;
 
     switch (sortBy) {
+      case 'custom':
+        return 0; // Maintain current order for drag & drop
       case 'date-desc':
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       case 'date-asc':
@@ -229,11 +232,15 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
   const [pendingItem, setPendingItem] = useState<Omit<Bookmark, 'id' | 'children' | 'createdAt'> | null>(null);
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState('date-desc');
+  const [sortBy, setSortBy] = useState('custom');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [overId, setOverId] = useState<string | null>(null);
+  
+  // Undo/Redo system
+  const [history, setHistory] = useState<BookmarkItem[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -248,6 +255,11 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
   useEffect(() => {
     setItems(initialItems);
+    // Initialize history with initial items
+    if (history.length === 0) {
+      setHistory([initialItems]);
+      setHistoryIndex(0);
+    }
   }, [initialItems]);
 
   // Debounce search term
@@ -553,6 +565,42 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     setSelectedTag(null);
   };
 
+  // Undo/Redo functionality
+  const saveToHistory = (newItems: BookmarkItem[]) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push([...newItems]);
+    if (newHistory.length > 50) { // Limit history to 50 entries
+      newHistory.shift();
+    } else {
+      setHistoryIndex(historyIndex + 1);
+    }
+    setHistory(newHistory);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const previousState = history[historyIndex - 1];
+      setItems([...previousState]);
+      setHistoryIndex(historyIndex - 1);
+      toast({
+        title: "Undone",
+        description: "Last action has been undone.",
+      });
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      setItems([...nextState]);
+      setHistoryIndex(historyIndex + 1);
+      toast({
+        title: "Redone",
+        description: "Action has been redone.",
+      });
+    }
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
     setIsDragging(true);
@@ -579,60 +627,84 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
     // Check if moving to parent level
     if (over.id === 'move-to-parent' && currentFolderId) {
-      const parentFolder = currentPath[currentPath.length - 2]; // Get parent of current folder
-      const targetParentId = parentFolder ? parentFolder.id : null; // null means root level
-      
-      // Move item to parent level
-      setItems(current => {
-        const removeItemRecursively = (items: BookmarkItem[], itemId: string): BookmarkItem[] => {
-          return items
-            .filter(item => item.id !== itemId)
-            .map(item => {
-              if (item.type === 'folder') {
-                return { ...item, children: removeItemRecursively(item.children, itemId) };
+      try {
+        // Safely determine parent folder
+        const parentFolder = currentPath.length > 1 ? currentPath[currentPath.length - 2] : null;
+        const targetParentId = parentFolder ? parentFolder.id : null; // null means root level
+        
+        console.log('Moving to parent level:', { activeItem: activeItem.id, targetParentId, currentPath });
+        
+        // Store original state for potential rollback and save to history
+        const originalItems = items;
+        saveToHistory(originalItems);
+        
+        // Move item to parent level
+        setItems(current => {
+          try {
+            const removeItemRecursively = (items: BookmarkItem[], itemId: string): BookmarkItem[] => {
+              return items
+                .filter(item => item.id !== itemId)
+                .map(item => {
+                  if (item.type === 'folder') {
+                    return { ...item, children: removeItemRecursively(item.children, itemId) };
+                  }
+                  return item;
+                });
+            };
+
+            const addItemToLevel = (items: BookmarkItem[], parentId: string | null, newItem: BookmarkItem): BookmarkItem[] => {
+              if (!parentId) {
+                // Add to root level
+                return [...items, newItem];
               }
-              return item;
-            });
-        };
+              return items.map(item => {
+                if (item.type === 'folder' && item.id === parentId) {
+                  return { ...item, children: [...item.children, newItem] };
+                }
+                if (item.type === 'folder') {
+                  return { ...item, children: addItemToLevel(item.children, parentId, newItem) };
+                }
+                return item;
+              });
+            };
 
-        const addItemToLevel = (items: BookmarkItem[], parentId: string | null, newItem: BookmarkItem): BookmarkItem[] => {
-          if (!parentId) {
-            // Add to root level
-            return [...items, newItem];
+            let updatedItems = removeItemRecursively(current, activeItem.id);
+            updatedItems = addItemToLevel(updatedItems, targetParentId, activeItem);
+            return updatedItems;
+          } catch (error) {
+            console.error('Error in state update for move to parent:', error);
+            return current; // Return unchanged state on error
           }
-          return items.map(item => {
-            if (item.type === 'folder' && item.id === parentId) {
-              return { ...item, children: [...item.children, newItem] };
-            }
-            if (item.type === 'folder') {
-              return { ...item, children: addItemToLevel(item.children, parentId, newItem) };
-            }
-            return item;
-          });
-        };
-
-        let updatedItems = removeItemRecursively(current, activeItem.id);
-        updatedItems = addItemToLevel(updatedItems, targetParentId, activeItem);
-        return updatedItems;
-      });
-
-      // Save to server
-      startTransition(() => {
-        saveItemAction(activeItem, targetParentId).then(() => {
-          toast({
-            title: "Moved to parent level",
-            description: `${activeItem.title} has been moved ${targetParentId ? 'to parent folder' : 'to root level'}.`,
-          });
-        }).catch(() => {
-          toast({
-            variant: "destructive",
-            title: "Move Failed",
-            description: "Could not move item to parent level.",
-          });
-          setItems(items);
         });
-      });
-      return;
+
+        // Save to server
+        startTransition(() => {
+          saveItemAction(activeItem, targetParentId).then(() => {
+            toast({
+              title: "Moved to parent level",
+              description: `${activeItem.title} has been moved ${targetParentId ? 'to parent folder' : 'to root level'}.`,
+            });
+          }).catch((error) => {
+            console.error('Error saving move to parent:', error);
+            toast({
+              variant: "destructive",
+              title: "Move Failed",
+              description: "Could not move item to parent level.",
+            });
+            // Revert to original state on error
+            setItems(originalItems);
+          });
+        });
+        return;
+      } catch (error) {
+        console.error('Error in move to parent level:', error);
+        toast({
+          variant: "destructive",
+          title: "Move Failed",
+          description: "An error occurred while moving the item.",
+        });
+        return;
+      }
     }
 
     const overItem = findItem(items, over.id as string);
@@ -640,53 +712,75 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
 
     // Check if dropping into a folder
     if (overItem.type === 'folder') {
-      // Move item into the folder
-      setItems(current => {
-        const removeItemRecursively = (items: BookmarkItem[], itemId: string): BookmarkItem[] => {
-          return items
-            .filter(item => item.id !== itemId)
-            .map(item => {
-              if (item.type === 'folder') {
-                return { ...item, children: removeItemRecursively(item.children, itemId) };
-              }
-              return item;
-            });
-        };
+      try {
+        console.log('Moving to folder:', { activeItem: activeItem.id, targetFolder: overItem.id });
+        
+        // Store original state for potential rollback and save to history
+        const originalItems = items;
+        saveToHistory(originalItems);
+        
+        // Move item into the folder
+        setItems(current => {
+          try {
+            const removeItemRecursively = (items: BookmarkItem[], itemId: string): BookmarkItem[] => {
+              return items
+                .filter(item => item.id !== itemId)
+                .map(item => {
+                  if (item.type === 'folder') {
+                    return { ...item, children: removeItemRecursively(item.children, itemId) };
+                  }
+                  return item;
+                });
+            };
 
-        const addItemToFolder = (items: BookmarkItem[], folderId: string, newItem: BookmarkItem): BookmarkItem[] => {
-          return items.map(item => {
-            if (item.type === 'folder' && item.id === folderId) {
-              return { ...item, children: [...item.children, newItem] };
-            }
-            if (item.type === 'folder') {
-              return { ...item, children: addItemToFolder(item.children, folderId, newItem) };
-            }
-            return item;
-          });
-        };
+            const addItemToFolder = (items: BookmarkItem[], folderId: string, newItem: BookmarkItem): BookmarkItem[] => {
+              return items.map(item => {
+                if (item.type === 'folder' && item.id === folderId) {
+                  return { ...item, children: [...item.children, newItem] };
+                }
+                if (item.type === 'folder') {
+                  return { ...item, children: addItemToFolder(item.children, folderId, newItem) };
+                }
+                return item;
+              });
+            };
 
-        let updatedItems = removeItemRecursively(current, activeItem.id);
-        updatedItems = addItemToFolder(updatedItems, overItem.id, activeItem);
-        return updatedItems;
-      });
-
-      // Save to server - move to folder
-      startTransition(() => {
-        saveItemAction(activeItem, overItem.id).then(() => {
-          toast({
-            title: "Moved to folder",
-            description: `${activeItem.title} has been moved to "${overItem.title}".`,
-          });
-        }).catch(() => {
-          toast({
-            variant: "destructive",
-            title: "Move Failed",
-            description: "Could not move item to folder.",
-          });
-          // Revert on error
-          setItems(items);
+            let updatedItems = removeItemRecursively(current, activeItem.id);
+            updatedItems = addItemToFolder(updatedItems, overItem.id, activeItem);
+            return updatedItems;
+          } catch (error) {
+            console.error('Error in state update for move to folder:', error);
+            return current; // Return unchanged state on error
+          }
         });
-      });
+
+        // Save to server - move to folder
+        startTransition(() => {
+          saveItemAction(activeItem, overItem.id).then(() => {
+            toast({
+              title: "Moved to folder",
+              description: `${activeItem.title} has been moved to "${overItem.title}".`,
+            });
+          }).catch((error) => {
+            console.error('Error saving move to folder:', error);
+            toast({
+              variant: "destructive",
+              title: "Move Failed",
+              description: "Could not move item to folder.",
+            });
+            // Revert to original state on error
+            setItems(originalItems);
+          });
+        });
+      } catch (error) {
+        console.error('Error in move to folder:', error);
+        toast({
+          variant: "destructive",
+          title: "Move Failed",
+          description: "An error occurred while moving the item.",
+        });
+        return;
+      }
     } else {
       // Regular reordering within same level
       const activeIndex = itemsToDisplay.findIndex(item => item.id === active.id);
@@ -817,7 +911,7 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
     });
   };
   
-  const isDragAndDropEnabled = !debouncedSearchTerm && !selectedTag && sortBy === 'date-desc';
+  const isDragAndDropEnabled = !debouncedSearchTerm && !selectedTag && sortBy === 'custom';
   const activeItem = activeId ? findItem(items, activeId) : null;
 
   return (
@@ -828,16 +922,41 @@ export function BookmarkList({ initialItems }: { initialItems: BookmarkItem[] })
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="date-desc">Date (Newest) {isDragAndDropEnabled && "🔄"}</SelectItem>
+                <SelectItem value="custom">Custom Order 🔄</SelectItem>
+                <SelectItem value="date-desc">Date (Newest)</SelectItem>
                 <SelectItem value="date-asc">Date (Oldest)</SelectItem>
                 <SelectItem value="alpha-asc">Name (A-Z)</SelectItem>
                 <SelectItem value="alpha-desc">Name (Z-A)</SelectItem>
               </SelectContent>
             </Select>
             {isDragAndDropEnabled && (
-              <span className="text-xs text-muted-foreground hidden sm:block">
-                Drag & drop enabled
-              </span>
+              <>
+                <span className="text-xs text-muted-foreground hidden sm:block">
+                  Drag & drop enabled
+                </span>
+                <div className="flex gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleUndo}
+                    disabled={historyIndex <= 0}
+                    className="h-8 w-8 p-0"
+                    title="Undo last drag operation"
+                  >
+                    <Undo2 className="h-3 w-3" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleRedo}
+                    disabled={historyIndex >= history.length - 1}
+                    className="h-8 w-8 p-0"
+                    title="Redo last undone operation"
+                  >
+                    <Redo2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </>
             )}
 
             <Button onClick={handleAddNewBookmark} className="font-headline h-11" disabled={isPending}>

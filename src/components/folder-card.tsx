@@ -1,6 +1,6 @@
 "use client";
 
-import { Folder as FolderIcon, Pencil, Trash2, GripVertical } from "lucide-react";
+import { Folder as FolderIcon, Pencil, Trash2, Move } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -66,7 +66,7 @@ export function FolderCard({ folder, onEdit, onDelete, onNavigate, isSelected, o
                         onClick={(e) => e.stopPropagation()}
                         title="Drag to reorder"
                       >
-                        <GripVertical className="h-3 w-3 text-primary hover:text-primary/80 transition-colors" />
+                        <Move className="h-3 w-3 text-primary hover:text-primary/80 transition-colors" />
                       </div>
                     )}
                     <FolderIcon className="h-4 w-4 text-primary shrink-0" />

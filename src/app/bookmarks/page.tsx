@@ -1,4 +1,5 @@
 import { BookmarkList } from "@/components/bookmark-list";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AppFooter } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,9 @@ export default async function BookmarksPage() {
         </div>
       </header>
       <div className="w-full mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <BookmarkList initialItems={bookmarks} />
+        <ErrorBoundary>
+          <BookmarkList initialItems={bookmarks} />
+        </ErrorBoundary>
       </div>
       <AppFooter />
     </main>

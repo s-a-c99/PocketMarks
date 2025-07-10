@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2, ExternalLink, Star, GripVertical } from "lucide-react";
+import { Pencil, Trash2, ExternalLink, Star, Move } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,7 +68,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite, isS
                 className="flex items-center cursor-grab active:cursor-grabbing mt-1 p-1 rounded hover:bg-primary/10 transition-colors"
                 title="Drag to reorder"
               >
-                <GripVertical className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors" />
+                <Move className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors" />
               </div>
             )}
             <a
